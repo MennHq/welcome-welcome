@@ -1,0 +1,6 @@
+{
+  "name": "15 Min CookBook Welcome",
+  "description": "A premium welcome page for the '15 Min CookBook For Busy Moms'",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
