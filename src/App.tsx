@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { HashRouter, Routes, Route, Link } from 'react-router-dom';
 
 const AmbientBackground = () => (
   <>
@@ -205,17 +205,7 @@ const ProtectionGuard = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   if (!isEmbedded) {
-    return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#FAF9F6] text-stone-800 font-sans select-none">
-        <div className="max-w-md text-center px-4">
-          <h2 className="text-2xl font-serif mb-4">Protected Component</h2>
-          <p className="text-stone-500 text-sm">
-            This module is securely connected to your Whop membership. 
-            It can only be viewed inside the platform dashboard embed.
-          </p>
-        </div>
-      </div>
-    );
+    return <div className="h-screen w-full bg-[#FAF9F6]" />;
   }
 
   return <>{children}</>;
@@ -224,12 +214,12 @@ const ProtectionGuard = ({ children }: { children: React.ReactNode }) => {
 export default function App() {
   return (
     <ProtectionGuard>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route path="/" element={<Welcome />} />
           <Route path="/download" element={<Download />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </ProtectionGuard>
   );
 }
