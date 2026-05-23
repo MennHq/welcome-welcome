@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { HashRouter, Routes, Route, Link } from 'react-router-dom';
 
 const AmbientBackground = () => (
   <>
@@ -156,10 +155,6 @@ const Download = () => {
             Download E-Book
           </span>
         </motion.a>
-        
-        <Link to="/" className="text-stone-500 hover:text-stone-800 transition-colors duration-300 font-sans tracking-wide text-sm relative z-50">
-          Return to welcome
-        </Link>
       </div>
     </div>
   );
@@ -170,9 +165,14 @@ const ProtectionGuard = ({ children }: { children: React.ReactNode }) => {
   const [isEmbedded, setIsEmbedded] = useState(true);
 
   useEffect(() => {
-    // Prevent direct access outside of an iframe
-    if (window === window.top) {
-      setIsEmbedded(false);
+    try {
+      // Prevent direct access outside of an iframe
+      if (window.self === window.top) {
+        setIsEmbedded(false);
+      }
+    } catch (e) {
+      // Accessing top from cross-origin iframe throws an error, so it's embedded.
+      setIsEmbedded(true);
     }
   }, []);
 
@@ -212,14 +212,15 @@ const ProtectionGuard = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function App() {
+  const isDownload = 
+    window.location.pathname === '/download' || 
+    window.location.pathname === '/download/' ||
+    window.location.hash.includes('download') || 
+    window.location.search.includes('download');
+
   return (
     <ProtectionGuard>
-      <HashRouter>
-        <Routes>
-          <Route path="/" element={<Welcome />} />
-          <Route path="/download" element={<Download />} />
-        </Routes>
-      </HashRouter>
+      {isDownload ? <Download /> : <Welcome />}
     </ProtectionGuard>
   );
 }
