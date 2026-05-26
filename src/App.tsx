@@ -77,7 +77,7 @@ const Welcome = () => {
         </motion.div>
 
         <motion.a
-          href="https://whop.com/joined/15-min-cookbook-for-bussy-moms/cook-book-here-U2Yb2k1xWmHJR0/app/"
+          href="https://whop.com/joined/15-min-cookbook-for-bussy-moms/cook-book-here-njUxm348Nakama/app/"
           target="_top"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
