@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { WhopCheckoutEmbed } from "@whop/checkout/react";
 import Lenis from '@studio-freight/lenis';
 import { Info, Mail } from 'lucide-react';
+import CursorPreloader from './components/CursorPreloader';
 
 const AmbientBackground = () => (
   <>
@@ -871,6 +872,8 @@ const LogsViewer = () => {
 };
 
 export default function App() {
+  const [cursorsLoaded, setCursorsLoaded] = useState(false);
+
   const path = window.location.pathname.toLowerCase();
   const hash = window.location.hash.toLowerCase();
   const search = window.location.search.toLowerCase();
@@ -881,19 +884,33 @@ export default function App() {
 
   return (
     <>
-      {isLogs ? (
-        <LogsViewer />
-      ) : isDownload ? (
-        <EmbedGuard>
-          <Download />
-        </EmbedGuard>
-      ) : isWelcome ? (
-        <EmbedGuard>
-          <Welcome />
-        </EmbedGuard>
-      ) : (
-        <LandingPage />
-      )}
+      <AnimatePresence mode="wait">
+        {!cursorsLoaded && !isLogs ? (
+          <CursorPreloader key="preloader" onComplete={() => setCursorsLoaded(true)} />
+        ) : (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {isLogs ? (
+              <LogsViewer />
+            ) : isDownload ? (
+              <EmbedGuard>
+                <Download />
+              </EmbedGuard>
+            ) : isWelcome ? (
+              <EmbedGuard>
+                <Welcome />
+              </EmbedGuard>
+            ) : (
+              <LandingPage />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
