@@ -1,6 +1,6 @@
 {
-  "name": "15 Min CookBook Welcome",
-  "description": "A premium welcome page for the '15 Min CookBook For Busy Moms'",
+  "name": "15-Minute Cookbook - Quick & Easy Cooking Recipes",
+  "description": "Discover the best 15-minute cookbook filled with over 50+ quick, family-friendly cooking recipes designed for busy parents in the USA and Tier-1 countries.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
