@@ -7,7 +7,54 @@
 }
 
 @layer base {
-  body {
+  html, body {
+    cursor: url('/Cusor_By_Jepricreations/arrow.cur'), default;
+    min-height: 100vh;
+  }
+  
+  /* Buttons, links, and clickable items */
+  a, 
+  button, 
+  [role="button"], 
+  .cursor-pointer,
+  select,
+  summary {
+    cursor: url('/Cusor_By_Jepricreations/hand.cur'), pointer !important;
+  }
+
+  /* Inputs, textareas, and text fields */
+  input, 
+  textarea, 
+  [contenteditable="true"] {
+    cursor: text;
+  }
+
+  /* Help elements */
+  .cursor-help, 
+  abbr, 
+  [title] {
+    cursor: help;
+  }
+
+  /* Disabled or forbidden actions */
+  .cursor-not-allowed, 
+  [disabled], 
+  :disabled,
+  .disabled {
+    cursor: not-allowed !important;
+  }
+
+  /* Special interactive crosshair */
+  .cursor-crosshair {
+    cursor: crosshair;
+  }
+
+  /* Grab / drag actions */
+  .cursor-grab {
+    cursor: url('/Cusor_By_Jepricreations/hand.cur'), grab !important;
+  }
+  .cursor-grabbing {
+    cursor: url('/Cusor_By_Jepricreations/hand.cur'), grabbing !important;
   }
 }
 
@@ -20,4 +67,255 @@
 .no-scrollbar {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* Claymorphism styles (ultra-depth, bubbly, smooth, tactile) */
+.clay-card-white {
+  background-color: #ffffff;
+  border-radius: 3rem; /* Extra bubbly corners */
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 1),
+    inset 14px 14px 28px rgba(255, 255, 255, 0.95),
+    inset -4px -4px 8px rgba(120, 110, 100, 0.04),
+    inset -14px -14px 28px rgba(120, 110, 100, 0.08),
+    6px 12px 20px rgba(120, 110, 100, 0.04),
+    16px 28px 56px rgba(120, 110, 100, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.clay-card-rose {
+  background-color: #fff1f3; /* Rich pastel rose */
+  border-radius: 3rem;
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 1),
+    inset 14px 14px 28px rgba(255, 255, 255, 0.95),
+    inset -4px -4px 8px rgba(244, 63, 94, 0.05),
+    inset -14px -14px 28px rgba(244, 63, 94, 0.14),
+    6px 12px 20px rgba(244, 63, 94, 0.04),
+    16px 28px 56px rgba(244, 63, 94, 0.14);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.clay-card-amber {
+  background-color: #fff5e6; /* Soft peach-apricot */
+  border-radius: 3rem;
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 1),
+    inset 14px 14px 28px rgba(255, 255, 255, 0.95),
+    inset -4px -4px 8px rgba(217, 119, 6, 0.05),
+    inset -14px -14px 28px rgba(217, 119, 6, 0.14),
+    6px 12px 20px rgba(217, 119, 6, 0.04),
+    16px 28px 56px rgba(217, 119, 6, 0.14);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.clay-card-emerald {
+  background-color: #ecfdf5; /* Soft mint sage */
+  border-radius: 3rem;
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 1),
+    inset 14px 14px 28px rgba(255, 255, 255, 0.95),
+    inset -4px -4px 8px rgba(16, 185, 129, 0.05),
+    inset -14px -14px 28px rgba(16, 185, 129, 0.12),
+    6px 12px 20px rgba(16, 185, 129, 0.04),
+    16px 28px 56px rgba(16, 185, 129, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.clay-card-blue {
+  background-color: #f0f4ff; /* Lavendar blue */
+  border-radius: 3rem;
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 1),
+    inset 14px 14px 28px rgba(255, 255, 255, 0.95),
+    inset -4px -4px 8px rgba(59, 130, 246, 0.05),
+    inset -14px -14px 28px rgba(59, 130, 246, 0.12),
+    6px 12px 20px rgba(59, 130, 246, 0.04),
+    16px 28px 56px rgba(59, 130, 246, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.clay-card-stone {
+  background-color: #fafaf9; /* Warm stone grey */
+  border-radius: 3rem;
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 1),
+    inset 14px 14px 28px rgba(255, 255, 255, 0.95),
+    inset -4px -4px 8px rgba(120, 110, 100, 0.05),
+    inset -14px -14px 28px rgba(120, 110, 100, 0.12),
+    6px 12px 20px rgba(120, 110, 100, 0.04),
+    16px 28px 56px rgba(120, 110, 100, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.clay-button-rose {
+  background-color: #f43f5e; /* rose-500 */
+  box-shadow: 
+    inset 3px 3px 6px rgba(255, 255, 255, 0.45),
+    inset 10px 10px 20px rgba(255, 255, 255, 0.25),
+    inset -3px -3px 6px rgba(159, 18, 57, 0.3),
+    inset -10px -10px 20px rgba(159, 18, 57, 0.5),
+    4px 8px 16px rgba(244, 63, 94, 0.2),
+    10px 20px 40px rgba(244, 63, 94, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.clay-button-rose:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 0.55),
+    inset 12px 12px 24px rgba(255, 255, 255, 0.3),
+    inset -4px -4px 8px rgba(159, 18, 57, 0.35),
+    inset -12px -12px 24px rgba(159, 18, 57, 0.55),
+    6px 12px 20px rgba(244, 63, 94, 0.25),
+    12px 26px 48px rgba(244, 63, 94, 0.45);
+}
+.clay-button-rose:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.3),
+    inset 6px 6px 12px rgba(255, 255, 255, 0.15),
+    inset -2px -2px 4px rgba(159, 18, 57, 0.35),
+    inset -8px -8px 16px rgba(159, 18, 57, 0.5),
+    2px 4px 10px rgba(244, 63, 94, 0.15),
+    6px 12px 24px rgba(244, 63, 94, 0.25);
+}
+
+.clay-button-stone {
+  background-color: #1c1917; /* stone-900 */
+  box-shadow: 
+    inset 3px 3px 6px rgba(255, 255, 255, 0.25),
+    inset 10px 10px 20px rgba(255, 255, 255, 0.12),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.5),
+    inset -10px -10px 20px rgba(0, 0, 0, 0.7),
+    4px 8px 16px rgba(28, 25, 23, 0.15),
+    10px 20px 40px rgba(28, 25, 23, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.clay-button-stone:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 0.3),
+    inset 12px 12px 24px rgba(255, 255, 255, 0.18),
+    inset -4px -4px 8px rgba(0, 0, 0, 0.55),
+    inset -12px -12px 24px rgba(0, 0, 0, 0.75),
+    6px 12px 20px rgba(28, 25, 23, 0.2),
+    12px 26px 48px rgba(28, 25, 23, 0.45);
+}
+.clay-button-stone:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.15),
+    inset 6px 6px 12px rgba(255, 255, 255, 0.1),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.55),
+    inset -8px -8px 16px rgba(0, 0, 0, 0.7),
+    2px 4px 10px rgba(28, 25, 23, 0.1),
+    6px 12px 24px rgba(28, 25, 23, 0.25);
+}
+
+.clay-button-black {
+  background-color: #0d0c0c; /* Real puffy obsidian black */
+  color: #ffffff;
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 0.35),
+    inset 12px 12px 24px rgba(255, 255, 255, 0.18),
+    inset -4px -4px 8px rgba(0, 0, 0, 0.65),
+    inset -12px -12px 24px rgba(0, 0, 0, 0.85),
+    4px 8px 16px rgba(0, 0, 0, 0.2),
+    12px 26px 48px rgba(0, 0, 0, 0.45);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.clay-button-black:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 
+    inset 5px 5px 10px rgba(255, 255, 255, 0.45),
+    inset 14px 14px 28px rgba(255, 255, 255, 0.25),
+    inset -5px -5px 10px rgba(0, 0, 0, 0.7),
+    inset -14px -14px 28px rgba(0, 0, 0, 0.9),
+    6px 12px 20px rgba(0, 0, 0, 0.25),
+    12px 26px 48px rgba(0, 0, 0, 0.5);
+}
+.clay-button-black:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 0.2),
+    inset 6px 6px 12px rgba(255, 255, 255, 0.12),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.65),
+    inset -8px -8px 16px rgba(0, 0, 0, 0.85),
+    2px 4px 10px rgba(0, 0, 0, 0.15),
+    6px 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+.clay-button-light {
+  background-color: #ffffff;
+  color: #1c1917;
+  box-shadow: 
+    inset 3px 3px 6px rgba(255, 255, 255, 1),
+    inset 10px 10px 20px rgba(255, 255, 255, 0.95),
+    inset -3px -3px 6px rgba(120, 110, 100, 0.1),
+    inset -10px -10px 20px rgba(120, 110, 100, 0.2),
+    4px 8px 16px rgba(120, 110, 100, 0.08),
+    10px 20px 40px rgba(120, 110, 100, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.clay-button-light:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 1),
+    inset 12px 12px 24px rgba(255, 255, 255, 0.95),
+    inset -4px -4px 8px rgba(120, 110, 100, 0.15),
+    inset -12px -12px 24px rgba(120, 110, 100, 0.25),
+    6px 12px 20px rgba(120, 110, 100, 0.12),
+    12px 26px 48px rgba(120, 110, 100, 0.25);
+}
+.clay-button-light:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: 
+    inset 2px 2px 4px rgba(255, 255, 255, 1),
+    inset 6px 6px 12px rgba(255, 255, 255, 0.95),
+    inset -2px -2px 4px rgba(120, 110, 100, 0.15),
+    inset -8px -8px 16px rgba(120, 110, 100, 0.2),
+    2px 4px 10px rgba(120, 110, 100, 0.06),
+    6px 12px 24px rgba(120, 110, 100, 0.15);
+}
+
+.clay-input {
+  background-color: #fafaf9; /* stone-50 */
+  box-shadow: 
+    inset 4px 4px 8px rgba(120, 110, 100, 0.08),
+    inset 8px 8px 16px rgba(120, 110, 100, 0.05),
+    inset -4px -4px 8px rgba(255, 255, 255, 0.95),
+    inset -8px -8px 16px rgba(255, 255, 255, 0.95),
+    0px 4px 8px rgba(0, 0, 0, 0.02);
+  border: 2px solid rgba(244, 63, 94, 0.08);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.clay-input:focus {
+  background-color: #ffffff;
+  border-color: rgba(244, 63, 94, 0.35);
+  box-shadow: 
+    inset 3px 3px 6px rgba(244, 63, 94, 0.05),
+    inset -3px -3px 6px rgba(255, 255, 255, 1),
+    0px 0px 0px 6px rgba(244, 63, 94, 0.12);
+}
+
+/* Floating soft clay shapes animations */
+@keyframes float-slower {
+  0%, 100% { transform: translateY(0) scale(1) rotate(0deg); }
+  50% { transform: translateY(-20px) scale(1.05) rotate(5deg); }
+}
+@keyframes float-faster {
+  0%, 100% { transform: translateY(0) scale(1) rotate(0deg); }
+  50% { transform: translateY(-15px) scale(0.95) rotate(-5deg); }
+}
+
+.animate-float-slow {
+  animation: float-slower 8s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: float-faster 6s ease-in-out infinite;
 }
