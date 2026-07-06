@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { WhopCheckoutEmbed } from "@whop/checkout/react";
 import Lenis from '@studio-freight/lenis';
 import { Info, Mail } from 'lucide-react';
-import CursorPreloader from './components/CursorPreloader';
 
 const AmbientBackground = () => (
   <>
@@ -564,6 +563,11 @@ const LandingPage = () => {
               { icon: "🍳", title: "One-Pan Wonders", desc: "Because 15 minutes of cooking shouldn't mean 45 minutes of cleaning." }
             ].map((feature, i) => {
               const cardColors = ["clay-card-rose", "clay-card-amber", "clay-card-emerald"];
+              const hoverShadows = [
+                "hover:shadow-[0_24px_48px_-10px_rgba(244,63,94,0.18)]",
+                "hover:shadow-[0_24px_48px_-10px_rgba(217,119,6,0.18)]",
+                "hover:shadow-[0_24px_48px_-10px_rgba(16,185,129,0.18)]"
+              ];
               const iconBackgrounds = [
                 "bg-rose-100 shadow-[inset_2.5px_2.5px_5px_rgba(255,255,255,0.9),inset_-2.5px_-2.5px_5px_rgba(244,63,94,0.12)] border-rose-200",
                 "bg-amber-100 shadow-[inset_2.5px_2.5px_5px_rgba(255,255,255,0.9),inset_-2.5px_-2.5px_5px_rgba(217,119,6,0.12)] border-amber-200",
@@ -576,9 +580,9 @@ const LandingPage = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
                   transition={{ duration: 0.6, delay: i * 0.1 }}
-                  className={`p-6 sm:p-8 rounded-[2rem] hover:-translate-y-1 transform-gpu transition-all duration-300 border-0 ${cardColors[i]}`}
+                  className={`group p-6 sm:p-8 rounded-[2rem] hover:-translate-y-3 hover:scale-[1.03] transform-gpu transition-all duration-300 border-0 ${cardColors[i]} ${hoverShadows[i]}`}
                 >
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl mb-6 border ${iconBackgrounds[i]}`}>
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl mb-6 border transition-all duration-500 group-hover:scale-110 group-hover:rotate-12 ${iconBackgrounds[i]}`}>
                     {feature.icon}
                   </div>
                   <h3 className="text-xl font-serif font-semibold text-stone-850 mb-2">{feature.title}</h3>
@@ -723,7 +727,7 @@ const LandingPage = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: "-50px" }}
                   transition={{ duration: 0.6, delay: i * 0.1 }}
-                  className={`p-8 sm:p-10 rounded-[3rem] border-0 transition-all duration-300 hover:-translate-y-2 ${cardColors[i]}`}
+                  className={`p-8 sm:p-10 rounded-[3rem] border-0 transition-all duration-300 hover:-translate-y-6 hover:shadow-lg ${cardColors[i]}`}
                 >
                   <div className={`w-14 h-14 rounded-full flex items-center justify-center text-3xl mb-6 border ${iconBgs[i]}`}>{section.icon}</div>
                   <h3 className={`text-xl font-serif font-bold ${textColors[i]} mb-3`}>{section.title}</h3>
@@ -755,32 +759,100 @@ const LandingPage = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-rose-50/50">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-serif text-stone-800 mb-12">Loved by thousands of busy moms</h2>
-          <div className="grid md:grid-cols-2 gap-8 text-left">
-            <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6 }}
-              className="p-8 sm:p-10 clay-card-white border-0 transition-all duration-300 hover:-translate-y-0.5"
-            >
-              <div className="flex gap-1 text-amber-500 font-bold mb-4">★★★★★</div>
-              <p className="text-stone-700 italic mb-4">"This cookbook literally saved my sanity. I used to dread 5 PM and order takeout multiple times a week. Now, I have dinner on the table before my kids even finish their homework."</p>
-              <p className="text-sm font-bold text-stone-900">— Sarah M., Mom of 3</p>
-            </motion.div>
-            <motion.div 
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="p-8 sm:p-10 clay-card-white border-0 transition-all duration-300 hover:-translate-y-0.5"
-            >
-              <div className="flex gap-1 text-amber-500 font-bold mb-4">★★★★★</div>
-              <p className="text-stone-700 italic mb-4">"I love how normal the ingredients are. No weird spices to buy. Just simple, hearty food that my picky 4-year-old actually eats without crying."</p>
-              <p className="text-sm font-bold text-stone-900">— Jessica T., Working Mom</p>
-            </motion.div>
+      <section className="py-24 bg-stone-50 border-t border-stone-200/40">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <span className="text-xs font-bold tracking-widest text-rose-500 uppercase">Real Reviews</span>
+            <h2 className="text-3xl md:text-5xl font-serif text-stone-850 mt-3 mb-4">Loved by busy moms</h2>
+            <div className="flex items-center justify-center gap-1 text-amber-500 text-lg mb-2">★★★★★</div>
+            <p className="text-stone-500 font-light text-sm">4.9/5 stars based on verified buyer feedback</p>
+          </div>
+
+          <div className="grid lg:grid-cols-12 gap-12 items-center">
+            {/* Instagram Reel Smartphone Frame */}
+            <div className="lg:col-span-5 flex flex-col items-center">
+              <div className="w-full max-w-[320px] relative">
+                {/* Decorative background glows */}
+                <div className="absolute -inset-4 bg-gradient-to-r from-rose-100 to-amber-100 rounded-[3rem] blur-xl opacity-50 -z-10 animate-pulse"></div>
+                
+                {/* Smartphone Device Frame */}
+                <div className="relative aspect-[9/16] w-full rounded-[2.75rem] p-3 bg-stone-900 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] border border-stone-800">
+                  {/* Speaker mesh & Camera Notch */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-32 bg-stone-900 rounded-b-2xl z-20 flex items-center justify-center gap-1.5">
+                    <div className="w-12 h-1 bg-stone-800 rounded-full"></div>
+                    <div className="w-2.5 h-2.5 bg-stone-800 rounded-full"></div>
+                  </div>
+                  
+                  {/* Embedded Iframe */}
+                  <div className="w-full h-full relative rounded-[2.25rem] overflow-hidden bg-stone-950">
+                    <iframe
+                      src="https://www.instagram.com/reel/DaY9jlBPYBU/embed"
+                      className="absolute inset-0 w-full h-full border-0 rounded-[2.25rem]"
+                      allowtransparency="true"
+                      allowFullScreen={true}
+                      frameBorder="0"
+                      scrolling="no"
+                    ></iframe>
+                  </div>
+                </div>
+
+                <p className="text-center text-xs text-stone-400 mt-4 italic">
+                  🎥 Swipe to see quick meal preps on Instagram
+                </p>
+              </div>
+            </div>
+
+            {/* Premium Written Testimonials */}
+            <div className="lg:col-span-7 space-y-6">
+              {[
+                {
+                  stars: "★★★★★",
+                  quote: "This cookbook literally saved my sanity. I used to dread 5 PM and order takeout multiple times a week. Now, I have dinner on the table before my kids even finish their homework.",
+                  author: "Sarah M.",
+                  role: "Mom of 3, Verified Buyer",
+                  avatar: undefined
+                },
+                {
+                  stars: "★★★★★",
+                  quote: "I love this because it makes busy mornings so much easier. 15 Minute Meals for Busy Moms has quick, healthy breakfast ideas that are simple to make and don’t take forever. Perfect for moms who want to feed their family something good without being in the kitchen all morning. 🍓✨",
+                  author: "Leilani",
+                  role: "Verified Buyer",
+                  avatar: "https://scontent.cdninstagram.com/v/t51.2885-19/461045710_1093883535485331_8693846117051779571_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_cat=108&ccb=7-5&_nc_sid=f7ccc5&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=TJYfixPger4Q7kNvwE987N5&_nc_oc=AdrNaAHGrfvInl1RCSdEC_Ee51D_HnnuSdXES1lyTzqLYzTMlDrjgSA0KElMW2k8RS8&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=7baaf&oh=00_AQBPP8QqenWWNlmDqleQh2Z0kaP7yBYHaFSw4th0wQIL1Q&oe=6A510A49"
+                }
+              ].map((item, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: 40 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: idx * 0.15 }}
+                  className="p-8 rounded-[2rem] bg-white border border-stone-100 shadow-[0_10px_30px_rgba(120,110,100,0.03)] hover:shadow-[0_20px_40px_rgba(120,110,100,0.06)] hover:-translate-y-1 transition-all duration-300"
+                >
+                  <div className="flex gap-1 text-amber-500 font-bold mb-3">{item.stars}</div>
+                  <p className="text-stone-700 italic text-base sm:text-lg mb-4 font-light leading-relaxed">
+                    "{item.quote}"
+                  </p>
+                  <div className="flex items-center gap-3">
+                    {item.avatar ? (
+                      <img 
+                        src={item.avatar} 
+                        alt={item.author}
+                        referrerPolicy="no-referrer"
+                        className="w-8 h-8 rounded-full object-cover border border-stone-100/80 shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-serif font-bold text-xs">
+                        {item.author[0]}
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-sm font-bold text-stone-900 block">{item.author}</span>
+                      <span className="text-xs text-stone-400 block">{item.role}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -794,7 +866,27 @@ const LandingPage = () => {
           <div className="overflow-hidden text-left mx-auto max-w-2xl p-6 sm:p-10 clay-card-white border-0 shadow-[inset_6px_6px_12px_rgba(255,255,255,0.95),inset_-6px_-6px_12px_rgba(120,110,100,0.06),15px_25px_50px_rgba(0,0,0,0.12)]">
             <CheckoutFlow />
           </div>
-          <p className="mt-8 text-xs text-stone-400 max-w-md mx-auto leading-relaxed px-4">Secure checkout powered by Whop. By placing this order, you agree to the Terms of Service.</p>
+          <p className="mt-8 text-xs text-stone-400 max-w-md mx-auto leading-relaxed px-4">
+            Secure checkout powered by{" "}
+            <a 
+              href="https://whop.com/tos/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="font-medium text-stone-500 hover:text-rose-500 underline transition-colors"
+            >
+              whop.com
+            </a>
+            . By placing this order, you agree to the{" "}
+            <a 
+              href="https://whop.com/tos/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="font-medium text-stone-500 hover:text-rose-500 underline transition-colors"
+            >
+              Terms of Service
+            </a>
+            .
+          </p>
         </div>
       </section>
       
@@ -872,8 +964,6 @@ const LogsViewer = () => {
 };
 
 export default function App() {
-  const [cursorsLoaded, setCursorsLoaded] = useState(false);
-
   const path = window.location.pathname.toLowerCase();
   const hash = window.location.hash.toLowerCase();
   const search = window.location.search.toLowerCase();
@@ -884,33 +974,19 @@ export default function App() {
 
   return (
     <>
-      <AnimatePresence mode="wait">
-        {!cursorsLoaded && !isLogs ? (
-          <CursorPreloader key="preloader" onComplete={() => setCursorsLoaded(true)} />
-        ) : (
-          <motion.div
-            key="content"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            {isLogs ? (
-              <LogsViewer />
-            ) : isDownload ? (
-              <EmbedGuard>
-                <Download />
-              </EmbedGuard>
-            ) : isWelcome ? (
-              <EmbedGuard>
-                <Welcome />
-              </EmbedGuard>
-            ) : (
-              <LandingPage />
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {isLogs ? (
+        <LogsViewer />
+      ) : isDownload ? (
+        <EmbedGuard>
+          <Download />
+        </EmbedGuard>
+      ) : isWelcome ? (
+        <EmbedGuard>
+          <Welcome />
+        </EmbedGuard>
+      ) : (
+        <LandingPage />
+      )}
     </>
   );
 }

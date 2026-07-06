@@ -8,53 +8,7 @@
 
 @layer base {
   html, body {
-    cursor: url('/Cusor_By_Jepricreations/arrow.cur'), default;
     min-height: 100vh;
-  }
-  
-  /* Buttons, links, and clickable items */
-  a, 
-  button, 
-  [role="button"], 
-  .cursor-pointer,
-  select,
-  summary {
-    cursor: url('/Cusor_By_Jepricreations/hand.cur'), pointer !important;
-  }
-
-  /* Inputs, textareas, and text fields */
-  input, 
-  textarea, 
-  [contenteditable="true"] {
-    cursor: text;
-  }
-
-  /* Help elements */
-  .cursor-help, 
-  abbr, 
-  [title] {
-    cursor: help;
-  }
-
-  /* Disabled or forbidden actions */
-  .cursor-not-allowed, 
-  [disabled], 
-  :disabled,
-  .disabled {
-    cursor: not-allowed !important;
-  }
-
-  /* Special interactive crosshair */
-  .cursor-crosshair {
-    cursor: crosshair;
-  }
-
-  /* Grab / drag actions */
-  .cursor-grab {
-    cursor: url('/Cusor_By_Jepricreations/hand.cur'), grab !important;
-  }
-  .cursor-grabbing {
-    cursor: url('/Cusor_By_Jepricreations/hand.cur'), grabbing !important;
   }
 }
 
