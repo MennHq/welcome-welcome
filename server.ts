@@ -26,10 +26,24 @@ async function startServer() {
     );
   }
 
+  function generateShortLivedToken(email: string): string {
+    const expiry = Date.now() + 2 * 60 * 60 * 1000; // 2 hours validity
+    const payload = {
+      email,
+      exp: expiry,
+      salt: Math.random().toString(36).substring(2, 10)
+    };
+    return Buffer.from(JSON.stringify(payload)).toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  }
+
   // Helper to get styled email templates depending on recipient and purpose
   function getMailOptions(
     toEmail: string, 
     smtpEmail: string, 
+    downloadUrl: string,
     isGiftForce = false, 
     recipientName = "Leilani", 
     personalNote = ""
@@ -69,7 +83,7 @@ async function startServer() {
             </p>
             
             <div style="text-align: center; margin-bottom: 40px;">
-              <a href="https://dl.dropboxusercontent.com/scl/fi/zuoragfk0qhvgwdluvtra/15-Min-CookBook-For-Bussy-Moms.pdf?rlkey=vkwann8a81uxbviji2ye70fbf" 
+              <a href="${downloadUrl}" 
                  style="display: inline-block; padding: 18px 36px; background-color: #F43F5E; color: white; text-decoration: none; border-radius: 9999px; font-family: Georgia, serif; font-size: 20px; font-weight: bold; box-shadow: 0 8px 16px rgba(244, 63, 94, 0.25); transition: background-color 0.2s;">
                 Download Your Cookbook Gift 🎁
               </a>
@@ -103,10 +117,10 @@ async function startServer() {
             
             <p style="color: #4B5563; font-size: 18px; line-height: 1.6; margin-bottom: 20px;">Hi there,</p>
             <p style="color: #4B5563; font-size: 18px; line-height: 1.6; margin-bottom: 20px;">Your order was successful, and we are so excited to share these recipes with you and your family!</p>
-            <p style="color: #4B5563; font-size: 18px; line-height: 1.6; margin-bottom: 30px;">You can securely download your digital PDF of the <strong>15-Minute Cookbook for Busy Moms</strong> using the beautiful link below. Save it directly to your phone, tablet, or computer.</p>
+            <p style="color: #4B5563; font-size: 18px; line-height: 1.6; margin-bottom: 30px;">You can securely download your digital PDF of the <strong>15-Minute Cookbook for Busy Moms</strong> using the secure link below. Save it directly to your phone, tablet, or computer.</p>
             
             <div style="text-align: center; margin-bottom: 40px;">
-              <a href="https://dl.dropboxusercontent.com/scl/fi/zuoragfk0qhvgwdluvtra/15-Min-CookBook-For-Bussy-Moms.pdf?rlkey=vkwann8a81uxbviji2ye70fbf" 
+              <a href="${downloadUrl}" 
                  style="display: inline-block; padding: 18px 36px; background-color: #F43F5E; color: white; text-decoration: none; border-radius: 9999px; font-family: Georgia, serif; font-size: 20px; font-weight: bold; box-shadow: 0 8px 16px rgba(244, 63, 94, 0.2); transition: background-color 0.2s;">
                 Download E-Book PDF 🥘
               </a>
@@ -156,10 +170,15 @@ async function startServer() {
         },
       });
 
-      const mailOptions = getMailOptions(email, smtpEmail, isGift, recipientName, personalNote);
+      const host = req.get('host') || '15mincookbook.com';
+      const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+      const token = generateShortLivedToken(email);
+      const downloadUrl = `${protocol}://${host}/download?token=${token}`;
+
+      const mailOptions = getMailOptions(email, smtpEmail, downloadUrl, isGift, recipientName, personalNote);
 
       await transporter.sendMail(mailOptions);
-      res.json({ success: true, message: "Email sent successfully" });
+      res.json({ success: true, message: "Email sent successfully", token });
 
     } catch (error: any) {
       console.error("Email sending error:", error);
@@ -217,7 +236,12 @@ async function startServer() {
             service: 'gmail',
             auth: { user: smtpEmail, pass: smtpPassword },
           });
-          const mailOptions = getMailOptions(email, smtpEmail, isGiftRequest(req, email));
+          const host = req.get('host') || '15mincookbook.com';
+          const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+          const token = generateShortLivedToken(email);
+          const downloadUrl = `${protocol}://${host}/download?token=${token}`;
+
+          const mailOptions = getMailOptions(email, smtpEmail, downloadUrl, isGiftRequest(req, email));
           await transporter.sendMail(mailOptions);
           console.log("Sent webhook email successfully to:", email);
           return res.status(200).send("Webhook received and email sent");

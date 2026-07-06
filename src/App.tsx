@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { WhopCheckoutEmbed } from "@whop/checkout/react";
 import Lenis from '@studio-freight/lenis';
 import { Info, Mail } from 'lucide-react';
 
@@ -50,111 +49,109 @@ const AmbientBackground = () => (
   </>
 );
 
-const Welcome = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const generateShortLivedToken = (email: string): string => {
+  const expiry = Date.now() + 2 * 60 * 60 * 1000; // 2 hours validity
+  const payload = {
+    email,
+    exp: expiry,
+    salt: Math.random().toString(36).substring(2, 10)
+  };
+  return btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+const validateToken = (token: string): { isValid: boolean; email?: string } => {
+  try {
+    let base64 = token.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+    const payload = JSON.parse(atob(base64));
+    if (payload && payload.exp && typeof payload.exp === 'number') {
+      const isValid = Date.now() < payload.exp;
+      return { isValid, email: payload.email };
+    }
+  } catch (e) {
+    console.error("Token validation error:", e);
+  }
+  return { isValid: false };
+};
+
+const Download = () => {
+  const [isValid, setIsValid] = useState<boolean | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("");
 
   useEffect(() => {
-    // Automatically open the "email" after a brief delay
-    const timer = setTimeout(() => setIsOpen(true), 1500);
-    return () => clearTimeout(timer);
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      const validation = validateToken(token);
+      setIsValid(validation.isValid);
+      if (validation.email) {
+        setUserEmail(validation.email);
+      }
+    } else {
+      setIsValid(false);
+    }
   }, []);
+
+  if (isValid === null) {
+    return (
+      <div className="relative h-screen w-full flex flex-col items-center justify-center bg-[#FAF9F6]">
+        <AmbientBackground />
+        <div className="relative z-10 text-stone-500 font-sans tracking-wide">Verifying secure download key...</div>
+      </div>
+    );
+  }
+
+  if (!isValid) {
+    return (
+      <div className="relative h-screen w-full flex flex-col items-center justify-center bg-[#FAF9F6] text-center px-4">
+        <AmbientBackground />
+        <div className="relative z-10 max-w-md w-full p-8 sm:p-12 rounded-[2.5rem] bg-white border border-stone-100 shadow-[0_25px_50px_rgba(0,0,0,0.08)] text-center">
+          <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 text-3xl mb-6 mx-auto border border-rose-100/60 shadow-inner">
+            ⚠️
+          </div>
+          <h2 className="text-2xl font-serif text-stone-800 mb-4">Access Link Expired</h2>
+          <p className="text-stone-550 font-sans text-sm font-light leading-relaxed mb-6">
+            This secure link has expired. Download links are active for 2 hours post-purchase for security.
+          </p>
+          <div className="bg-amber-50/70 border border-amber-200/50 p-4 rounded-2xl text-left mb-6">
+            <h4 className="text-xs font-bold text-amber-800 uppercase tracking-widest">Notice</h4>
+            <p className="text-xs text-amber-900 mt-1 leading-relaxed font-semibold uppercase">
+              CHECK EMAIL ESPECIALLY SPAM FOLDER, TO DOWNLOAD EBOOK ANYTIME
+            </p>
+          </div>
+          <p className="text-xs text-stone-400">
+            Need assistance? Feel free to contact us at{" "}
+            <a href="mailto:15mincookbook@gmail.com" className="underline hover:text-rose-500 font-medium transition-colors">
+              15mincookbook@gmail.com
+            </a>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-[#FAF9F6]">
       <AmbientBackground />
-      
-      <motion.div
-        layout
-        initial={{ borderRadius: 100, width: "320px", height: "64px" }}
-        animate={isOpen ? { borderRadius: 40, width: "100%", maxWidth: "600px", height: "auto" } : {}}
-        transition={{ duration: 0.8, type: "spring", bounce: 0.2 }}
-        className="clay-card-white overflow-hidden relative z-10 cursor-default mx-4"
-        onClick={() => !isOpen && setIsOpen(true)}
-      >
-        <AnimatePresence mode="wait">
-          {!isOpen ? (
-            <motion.div 
-              key="notification"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-              className="flex items-center h-[64px] px-6 gap-4 text-stone-600 cursor-pointer"
-            >
-              <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center shrink-0 shadow-[inset_1.5px_1.5px_3px_rgba(255,255,255,0.85),inset_-1.5px_-1.5px_3px_rgba(244,63,94,0.1)] border border-white">
-                <svg className="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-              </div>
-              <div className="flex-1 w-full overflow-hidden">
-                 <p className="text-sm font-semibold truncate text-stone-800">New Email Received</p>
-                 <p className="text-xs truncate text-stone-500">Your 15-Minute Cookbook is here!</p>
-              </div>
-            </motion.div>
-          ) : (
-             <motion.div 
-               key="email-body"
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               transition={{ delay: 0.3, duration: 0.6 }}
-               className="p-8 md:p-12 w-full"
-             >
-               {/* Email Header */}
-               <div className="border-b border-stone-100 pb-6 mb-6">
-                 <div className="flex items-center gap-4 mb-6">
-                   <div className="w-14 h-14 bg-rose-100 flex items-center justify-center text-rose-500 font-serif text-3xl italic rounded-full shadow-[inset_3px_3px_6px_rgba(255,255,255,0.85),inset_-3px_-3px_6px_rgba(244,63,94,0.15),4px_6px_12px_rgba(244,63,94,0.1)] border border-white shrink-0">
-                     ♥
-                   </div>
-                   <div>
-                     <p className="font-semibold text-stone-800 text-lg">Cookbook Delivery</p>
-                     <p className="text-sm text-stone-500">to you</p>
-                   </div>
-                 </div>
-                 <h2 className="text-3xl sm:text-4xl font-serif text-stone-800 mb-2 leading-tight">Thank you for your order! 🎉</h2>
-               </div>
-               
-               {/* Email Content */}
-               <div className="space-y-4 text-stone-600 font-light mb-10 leading-relaxed text-base sm:text-lg">
-                 <p>Hi there,</p>
-                 <p>Your payment was successful, and we are so excited to share these recipes with you and your family!</p>
-                 <p>You can securely download your digital PDF of the <strong>15-Minute Cookbook for Busy Moms</strong> using the beautiful link below. Save it directly to your phone, tablet, or computer.</p>
-                 <p>Happy cooking!</p>
-               </div>
-
-               {/* Download Button */}
-               <div className="text-center">
-                  <motion.a
-                    href="https://dl.dropboxusercontent.com/scl/fi/zuoragfk0qhvgwdluvtra/15-Min-CookBook-For-Bussy-Moms.pdf?rlkey=vkwann8a81uxbviji2ye70fbf"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.6, type: "spring" }}
-                    className="inline-flex items-center gap-3 px-8 py-4 text-white rounded-full font-serif text-lg clay-button-black cursor-pointer"
-                  >
-                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                     Download E-Book PDF
-                  </motion.a>
-               </div>
-             </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </div>
-  );
-};
-
-const Download = () => {
-  return (
-    <div 
-      className="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-[#FAF9F6]"
-    >
-      <AmbientBackground />
-      <div className="relative z-10 flex flex-col items-center justify-center text-center px-4">
+      <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 max-w-2xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
+          className="w-full flex flex-col items-center"
         >
+          {/* NOTICE BANNER */}
+          <div className="w-full max-w-lg mb-8 p-4 rounded-3xl bg-rose-50/80 border border-rose-200/50 shadow-sm text-center">
+            <span className="text-base mr-2">📧</span>
+            <span className="text-xs sm:text-sm font-bold text-rose-800 uppercase tracking-wide">
+              CHECK EMAIL ESPECIALLY SPAM FOLDER, TO DOWNLOAD EBOOK ANYTIME
+            </span>
+          </div>
+
           <div className="inline-block px-5 py-2 rounded-full bg-rose-100 text-rose-600 font-sans tracking-widest text-xs font-bold uppercase mb-6 shadow-[inset_2.5px_2.5px_5px_rgba(255,255,255,0.9),inset_-2.5px_-2.5px_5px_rgba(244,63,94,0.1),4px_6px_15px_rgba(244,63,94,0.05)] border border-white">
-            Exclusive Resource
+            Access Verified {userEmail && `for ${userEmail}`}
           </div>
         </motion.div>
 
@@ -171,9 +168,9 @@ const Download = () => {
           animate={{ y: [0, -5, 0] }}
           transition={{ duration: 6, delay: 0.5, repeat: Infinity, ease: "easeInOut" }}
         >
-          <p className="text-stone-500 text-lg md:text-2xl font-sans font-light max-w-lg mb-10">
+          <p className="text-stone-550 text-lg md:text-2xl font-sans font-light max-w-lg mb-10 leading-relaxed">
             Get your copy of the <br />
-            <span className="font-normal text-stone-700">15-Minute Cookbook</span> <span className="italic">PDF</span>.
+            <span className="font-normal text-stone-700">15-Minute Cookbook</span> <span className="italic text-rose-500">PDF</span>.
           </p>
         </motion.div>
 
@@ -194,6 +191,10 @@ const Download = () => {
             Download E-Book
           </span>
         </motion.a>
+
+        <p className="text-xs text-stone-400 font-light mt-4">
+          Having download issues? Check your confirmation email or support at <a href="mailto:15mincookbook@gmail.com" className="underline font-semibold hover:text-rose-500 transition-colors">15mincookbook@gmail.com</a>.
+        </p>
       </div>
     </div>
   );
@@ -225,7 +226,18 @@ const CheckoutNotice = () => {
   return (
     <div className="mt-8 p-6 text-left clay-card-stone border-0">
       <div className="space-y-4">
-        <div className="flex gap-3 items-start">
+        {/* Spam Notice Alert Banner */}
+        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex gap-3 items-start shadow-inner">
+          <span className="text-xl shrink-0">📧</span>
+          <div>
+            <h4 className="text-xs font-bold text-amber-800 uppercase tracking-widest">Notice</h4>
+            <p className="text-xs font-semibold text-amber-950 mt-1 leading-relaxed uppercase">
+              CHECK EMAIL ESPECIALLY SPAM FOLDER, TO DOWNLOAD EBOOK ANYTIME
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 items-start border-t border-stone-200/30 pt-4">
           <Info className="w-4 h-4 text-rose-500/80 shrink-0 mt-0.5" />
           <div>
             <h4 className="text-xs font-semibold text-stone-700 tracking-wider uppercase">Please Double-Check Your Email</h4>
@@ -326,7 +338,7 @@ const PrivacyModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 </p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li><strong>Email Address:</strong> Necessary to email your digital PDF link and provide support services.</li>
-                  <li><strong>Payment Transactions:</strong> Processed entirely through <strong>Whop</strong>. We never store or track your billing data, credit card numbers, or secure transaction keys on our own servers.</li>
+                  <li><strong>Payment Transactions:</strong> Processed entirely through Whop. We never store or track your billing data, credit card numbers, or secure transaction keys on our own servers.</li>
                 </ul>
               </section>
 
@@ -377,67 +389,66 @@ const PrivacyModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
 const CheckoutFlow = () => {
   const [email, setEmail] = useState("");
-  const [showEmbed, setShowEmbed] = useState(false);
-  const embedRef = React.useRef<any>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const handlePaymentComplete = async () => {
-    try {
-      await fetch('/api/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email })
-      });
-    } catch (err) {
-      console.error(err);
-    }
-    // Payment complete. Whop will also try to hit our backend webhook.
-    // We just redirect the user to the welcome page immediately.
-    window.location.href = '/welcome';
+  const handlePurchase = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setIsRedirecting(true);
+    // Redirect to Whop Hosted Checkout prefilled with their email
+    window.location.href = `https://whop.com/checkout/plan_kEagaVwO2m3yz?email=${encodeURIComponent(email)}`;
   };
 
-  if (!showEmbed) {
-    return (
-      <div className="text-center w-full">
-        <h3 className="text-xl sm:text-2xl font-serif text-stone-850 mb-3">Where should we send your cookbook?</h3>
-        <p className="text-stone-500 mb-6 text-sm">Please enter the email address where you'd like to receive your PDF.</p>
-        <form autoComplete="on" onSubmit={(e) => { e.preventDefault(); if (email) setShowEmbed(true); }} className="space-y-4 max-w-sm mx-auto">
-          <input 
-            id="email"
-            name="email"
-            autoComplete="email"
-            type="email" 
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your@email.com" 
-            className="w-full px-5 py-4 rounded-full outline-none transition-all font-sans text-stone-700 clay-input text-center text-lg"
-          />
-          <button type="submit" className="w-full py-4 text-white rounded-full font-sans font-medium tracking-wide cursor-pointer clay-button-black text-lg">
-            Continue to Checkout
-          </button>
-        </form>
-        <CheckoutNotice />
-      </div>
-    );
-  }
-
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col">
-      <div className="-mx-6 -mt-6 sm:-mx-10 sm:-mt-10">
-        <WhopCheckoutEmbed 
-          ref={embedRef}
-          planId="plan_kEagaVwO2m3yz" 
-          theme="light"
-          prefill={{ email: email }}
-          onComplete={handlePaymentComplete}
+    <div className="text-center w-full">
+      {/* Dynamic Highlight Notice */}
+      <div className="mb-8 p-5 rounded-3xl bg-rose-50 border border-rose-200/50 flex flex-col sm:flex-row items-center justify-center gap-3 shadow-[inset_2.5px_2.5px_5px_rgba(255,255,255,0.9),inset_-2.5px_-2.5px_5px_rgba(244,63,94,0.03),2px_4px_12px_rgba(0,0,0,0.02)]">
+        <span className="text-2xl animate-pulse">📧</span>
+        <p className="text-xs sm:text-sm font-bold text-rose-800 tracking-wide uppercase leading-relaxed text-center sm:text-left">
+          CHECK EMAIL ESPECIALLY SPAM FOLDER, TO DOWNLOAD EBOOK ANYTIME
+        </p>
+      </div>
+
+      <h3 className="text-xl sm:text-2xl font-serif text-stone-850 mb-3">Where should we send your cookbook?</h3>
+      <p className="text-stone-500 mb-6 text-sm">Please enter the email address where you'd like to receive your PDF.</p>
+      
+      <form autoComplete="on" onSubmit={handlePurchase} className="space-y-4 max-w-sm mx-auto">
+        <input 
+          id="email"
+          name="email"
+          autoComplete="email"
+          type="email" 
+          required
+          disabled={isRedirecting}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="your@email.com" 
+          className="w-full px-5 py-4 rounded-full outline-none transition-all font-sans text-stone-700 clay-input text-center text-lg shadow-[inset_3px_3px_6px_rgba(0,0,0,0.02)] focus:border-rose-300"
         />
-      </div>
-      <div className="mt-4">
-        <CheckoutNotice />
-      </div>
-    </motion.div>
+        <button 
+          type="submit" 
+          disabled={isRedirecting}
+          className="w-full py-4 text-white rounded-full font-sans font-semibold tracking-wide cursor-pointer clay-button-rose hover:-translate-y-1 hover:scale-[1.01] active:translate-y-0 transition-all duration-300 shadow-md flex items-center justify-center gap-3 disabled:opacity-75 disabled:cursor-not-allowed"
+        >
+          {isRedirecting ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>Opening Secure Checkout...</span>
+            </>
+          ) : (
+            <>
+              <span>Continue to Checkout</span>
+              <span className="text-lg">✨</span>
+            </>
+          )}
+        </button>
+      </form>
+      <CheckoutNotice />
+    </div>
   );
 };
 
@@ -970,7 +981,6 @@ export default function App() {
 
   const isLogs = path.includes('/logs');
   const isDownload = path.includes('/download') || hash.includes('download') || search.includes('download');
-  const isWelcome = path.includes('/welcome') || hash.includes('welcome') || search.includes('welcome');
 
   return (
     <>
@@ -979,10 +989,6 @@ export default function App() {
       ) : isDownload ? (
         <EmbedGuard>
           <Download />
-        </EmbedGuard>
-      ) : isWelcome ? (
-        <EmbedGuard>
-          <Welcome />
         </EmbedGuard>
       ) : (
         <LandingPage />
