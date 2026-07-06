@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { WhopCheckoutEmbed } from "@whop/checkout/react";
 import Lenis from '@studio-freight/lenis';
 import { Info, Mail } from 'lucide-react';
 
@@ -389,66 +390,80 @@ const PrivacyModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 
 const CheckoutFlow = () => {
   const [email, setEmail] = useState("");
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [showEmbed, setShowEmbed] = useState(false);
+  const embedRef = useRef<any>(null);
 
-  const handlePurchase = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setIsRedirecting(true);
-    // Redirect to Whop Hosted Checkout prefilled with their email
-    window.location.href = `https://whop.com/checkout/plan_kEagaVwO2m3yz?email=${encodeURIComponent(email)}`;
+  const handlePaymentComplete = async () => {
+    try {
+      // Trigger SMTP email in the background
+      await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+    } catch (err) {
+      console.error(err);
+    }
+    const token = generateShortLivedToken(email);
+    window.location.href = `/download?token=${token}`;
   };
 
-  return (
-    <div className="text-center w-full">
-      {/* Dynamic Highlight Notice */}
-      <div className="mb-8 p-5 rounded-3xl bg-rose-50 border border-rose-200/50 flex flex-col sm:flex-row items-center justify-center gap-3 shadow-[inset_2.5px_2.5px_5px_rgba(255,255,255,0.9),inset_-2.5px_-2.5px_5px_rgba(244,63,94,0.03),2px_4px_12px_rgba(0,0,0,0.02)]">
-        <span className="text-2xl animate-pulse">📧</span>
-        <p className="text-xs sm:text-sm font-bold text-rose-800 tracking-wide uppercase leading-relaxed text-center sm:text-left">
-          CHECK EMAIL ESPECIALLY SPAM FOLDER, TO DOWNLOAD EBOOK ANYTIME
-        </p>
-      </div>
+  if (!showEmbed) {
+    return (
+      <div className="text-center w-full">
+        {/* Dynamic Highlight Notice */}
+        <div className="mb-8 p-5 rounded-3xl bg-rose-50 border border-rose-200/50 flex flex-col sm:flex-row items-center justify-center gap-3 shadow-[inset_2.5px_2.5px_5px_rgba(255,255,255,0.9),inset_-2.5px_-2.5px_5px_rgba(244,63,94,0.03),2px_4px_12px_rgba(0,0,0,0.02)]">
+          <span className="text-2xl animate-pulse">📧</span>
+          <p className="text-xs sm:text-sm font-bold text-rose-800 tracking-wide uppercase leading-relaxed text-center sm:text-left">
+            CHECK EMAIL ESPECIALLY SPAM FOLDER, TO DOWNLOAD EBOOK ANYTIME
+          </p>
+        </div>
 
-      <h3 className="text-xl sm:text-2xl font-serif text-stone-850 mb-3">Where should we send your cookbook?</h3>
-      <p className="text-stone-500 mb-6 text-sm">Please enter the email address where you'd like to receive your PDF.</p>
-      
-      <form autoComplete="on" onSubmit={handlePurchase} className="space-y-4 max-w-sm mx-auto">
-        <input 
-          id="email"
-          name="email"
-          autoComplete="email"
-          type="email" 
-          required
-          disabled={isRedirecting}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="your@email.com" 
-          className="w-full px-5 py-4 rounded-full outline-none transition-all font-sans text-stone-700 clay-input text-center text-lg shadow-[inset_3px_3px_6px_rgba(0,0,0,0.02)] focus:border-rose-300"
+        <h3 className="text-xl sm:text-2xl font-serif text-stone-850 mb-3">Where should we send your cookbook?</h3>
+        <p className="text-stone-500 mb-6 text-sm">Please enter the email address where you'd like to receive your PDF.</p>
+        
+        <form autoComplete="on" onSubmit={(e) => { e.preventDefault(); if (email) setShowEmbed(true); }} className="space-y-4 max-w-sm mx-auto">
+          <input 
+            id="email"
+            name="email"
+            autoComplete="email"
+            type="email" 
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="your@email.com" 
+            className="w-full px-5 py-4 rounded-full outline-none transition-all font-sans text-stone-700 clay-input text-center text-lg shadow-[inset_3px_3px_6px_rgba(0,0,0,0.02)] focus:border-rose-300"
+          />
+          <button 
+            type="submit" 
+            className="w-full py-4 text-white rounded-full font-sans font-semibold tracking-wide cursor-pointer clay-button-rose hover:-translate-y-1 hover:scale-[1.01] active:translate-y-0 transition-all duration-300 shadow-md flex items-center justify-center gap-3"
+          >
+            <span>Continue to Checkout</span>
+            <span className="text-lg">✨</span>
+          </button>
+        </form>
+        <CheckoutNotice />
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col">
+      <div className="-mx-6 -mt-6 sm:-mx-10 sm:-mt-10 overflow-hidden rounded-[2.5rem]">
+        <WhopCheckoutEmbed 
+          ref={embedRef}
+          planId="plan_kEagaVwO2m3yz" 
+          theme="light"
+          prefill={{ email: email }}
+          onComplete={handlePaymentComplete}
         />
-        <button 
-          type="submit" 
-          disabled={isRedirecting}
-          className="w-full py-4 text-white rounded-full font-sans font-semibold tracking-wide cursor-pointer clay-button-rose hover:-translate-y-1 hover:scale-[1.01] active:translate-y-0 transition-all duration-300 shadow-md flex items-center justify-center gap-3 disabled:opacity-75 disabled:cursor-not-allowed"
-        >
-          {isRedirecting ? (
-            <>
-              <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              <span>Opening Secure Checkout...</span>
-            </>
-          ) : (
-            <>
-              <span>Continue to Checkout</span>
-              <span className="text-lg">✨</span>
-            </>
-          )}
-        </button>
-      </form>
-      <CheckoutNotice />
-    </div>
+      </div>
+      <div className="mt-4">
+        <CheckoutNotice />
+      </div>
+    </motion.div>
   );
 };
 
