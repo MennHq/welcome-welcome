@@ -50,33 +50,6 @@ const AmbientBackground = () => (
   </>
 );
 
-const generateShortLivedToken = (email: string): string => {
-  const expiry = Date.now() + 2 * 60 * 60 * 1000; // 2 hours validity
-  const payload = {
-    email,
-    exp: expiry,
-    salt: Math.random().toString(36).substring(2, 10)
-  };
-  return btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-};
-
-const validateToken = (token: string): { isValid: boolean; email?: string } => {
-  try {
-    let base64 = token.replace(/-/g, '+').replace(/_/g, '/');
-    while (base64.length % 4) {
-      base64 += '=';
-    }
-    const payload = JSON.parse(atob(base64));
-    if (payload && payload.exp && typeof payload.exp === 'number') {
-      const isValid = Date.now() < payload.exp;
-      return { isValid, email: payload.email };
-    }
-  } catch (e) {
-    console.error("Token validation error:", e);
-  }
-  return { isValid: false };
-};
-
 const Download = () => {
   const [isValid, setIsValid] = useState<boolean | null>(null);
   const [userEmail, setUserEmail] = useState<string>("");
@@ -85,11 +58,18 @@ const Download = () => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     if (token) {
-      const validation = validateToken(token);
-      setIsValid(validation.isValid);
-      if (validation.email) {
-        setUserEmail(validation.email);
-      }
+      fetch(`/api/verify-token?token=${encodeURIComponent(token)}`)
+        .then(res => res.json())
+        .then(data => {
+          setIsValid(data.isValid);
+          if (data.email) {
+            setUserEmail(data.email);
+          }
+        })
+        .catch(err => {
+          console.error("Token verification error:", err);
+          setIsValid(false);
+        });
     } else {
       setIsValid(false);
     }
@@ -114,7 +94,7 @@ const Download = () => {
           </div>
           <h2 className="text-2xl font-serif text-stone-800 mb-4">Access Link Expired</h2>
           <p className="text-stone-550 font-sans text-sm font-light leading-relaxed mb-6">
-            This secure link has expired. Download links are active for 2 hours post-purchase for security.
+            This secure link has expired. Download links are active for 30 minutes post-purchase for security.
           </p>
           <div className="bg-amber-50/70 border border-amber-200/50 p-4 rounded-2xl text-left mb-6">
             <h4 className="text-xs font-bold text-amber-800 uppercase tracking-widest">Notice</h4>
@@ -202,24 +182,6 @@ const Download = () => {
 };
 
 const EmbedGuard = ({ children }: { children: React.ReactNode }) => {
-  const [isEmbedded, setIsEmbedded] = useState(true);
-
-  useEffect(() => {
-    try {
-      // Prevent direct access outside of an iframe
-      if (window.self === window.top) {
-        setIsEmbedded(false);
-      }
-    } catch (e) {
-      // Accessing top from cross-origin iframe throws an error, so it's embedded.
-      setIsEmbedded(true);
-    }
-  }, []);
-
-  if (!isEmbedded) {
-    return <div className="h-screen w-full bg-[#FAF9F6]" />;
-  }
-
   return <>{children}</>;
 };
 
@@ -394,76 +356,103 @@ const CheckoutFlow = () => {
   const embedRef = useRef<any>(null);
 
   const handlePaymentComplete = async () => {
+    let secureToken = "";
     try {
-      // Trigger SMTP email in the background
-      await fetch('/api/send-email', {
+      // Trigger SMTP email in the background and receive the secure signed token from the server
+      const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ email })
       });
+      const data = await response.json();
+      if (data.token) {
+        secureToken = data.token;
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Payment completion handler error:", err);
     }
-    const token = generateShortLivedToken(email);
-    window.location.href = `/download?token=${token}`;
+
+    if (secureToken) {
+      window.location.href = `/download?token=${encodeURIComponent(secureToken)}`;
+    } else {
+      // Fallback: retry getting the token
+      try {
+        const response = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await response.json();
+        if (data.token) {
+          window.location.href = `/download?token=${encodeURIComponent(data.token)}`;
+          return;
+        }
+      } catch (retryErr) {
+        console.error("Retry failed:", retryErr);
+      }
+    }
   };
 
-  if (!showEmbed) {
-    return (
-      <div className="text-center w-full">
-        {/* Dynamic Highlight Notice */}
-        <div className="mb-8 p-5 rounded-3xl bg-rose-50 border border-rose-200/50 flex flex-col sm:flex-row items-center justify-center gap-3 shadow-[inset_2.5px_2.5px_5px_rgba(255,255,255,0.9),inset_-2.5px_-2.5px_5px_rgba(244,63,94,0.03),2px_4px_12px_rgba(0,0,0,0.02)]">
-          <span className="text-2xl animate-pulse">📧</span>
-          <p className="text-xs sm:text-sm font-bold text-rose-800 tracking-wide uppercase leading-relaxed text-center sm:text-left">
-            CHECK EMAIL ESPECIALLY SPAM FOLDER, TO DOWNLOAD EBOOK ANYTIME
-          </p>
-        </div>
-
-        <h3 className="text-xl sm:text-2xl font-serif text-stone-850 mb-3">Where should we send your cookbook?</h3>
-        <p className="text-stone-500 mb-6 text-sm">Please enter the email address where you'd like to receive your PDF.</p>
-        
-        <form autoComplete="on" onSubmit={(e) => { e.preventDefault(); if (email) setShowEmbed(true); }} className="space-y-4 max-w-sm mx-auto">
-          <input 
-            id="email"
-            name="email"
-            autoComplete="email"
-            type="email" 
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="your@email.com" 
-            className="w-full px-5 py-4 rounded-full outline-none transition-all font-sans text-stone-700 clay-input text-center text-lg shadow-[inset_3px_3px_6px_rgba(0,0,0,0.02)] focus:border-rose-300"
-          />
-          <button 
-            type="submit" 
-            className="w-full py-4 text-white rounded-full font-sans font-semibold tracking-wide cursor-pointer clay-button-rose hover:-translate-y-1 hover:scale-[1.01] active:translate-y-0 transition-all duration-300 shadow-md flex items-center justify-center gap-3"
-          >
-            <span>Continue to Checkout</span>
-            <span className="text-lg">✨</span>
-          </button>
-        </form>
-        <CheckoutNotice />
-      </div>
-    );
-  }
-
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col">
-      <div className="-mx-6 -mt-6 sm:-mx-10 sm:-mt-10 overflow-hidden rounded-[2.5rem]">
-        <WhopCheckoutEmbed 
-          ref={embedRef}
-          planId="plan_kEagaVwO2m3yz" 
-          theme="light"
-          prefill={{ email: email }}
-          onComplete={handlePaymentComplete}
-        />
+    <div className="relative w-full">
+      {/* Email Collection Form - Hidden when checkout embed is active */}
+      <div className={!showEmbed ? "block" : "hidden"}>
+        <div className="text-center w-full">
+          {/* Dynamic Highlight Notice */}
+          <div className="mb-8 p-5 rounded-3xl bg-rose-50 border border-rose-200/50 flex flex-col sm:flex-row items-center justify-center gap-3 shadow-[inset_2.5px_2.5px_5px_rgba(255,255,255,0.9),inset_-2.5px_-2.5px_5px_rgba(244,63,94,0.03),2px_4px_12px_rgba(0,0,0,0.02)]">
+            <span className="text-2xl animate-pulse">📧</span>
+            <p className="text-xs sm:text-sm font-bold text-rose-800 tracking-wide uppercase leading-relaxed text-center sm:text-left">
+              CHECK EMAIL ESPECIALLY SPAM FOLDER, TO DOWNLOAD EBOOK ANYTIME
+            </p>
+          </div>
+
+          <h3 className="text-xl sm:text-2xl font-serif text-stone-850 mb-3">Where should we send your cookbook?</h3>
+          <p className="text-stone-500 mb-6 text-sm">Please enter the email address where you'd like to receive your PDF.</p>
+          
+          <form autoComplete="on" onSubmit={(e) => { e.preventDefault(); if (email) setShowEmbed(true); }} className="space-y-4 max-w-sm mx-auto">
+            <input 
+              id="email"
+              name="email"
+              autoComplete="email"
+              type="email" 
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com" 
+              className="w-full px-5 py-4 rounded-full outline-none transition-all font-sans text-stone-700 clay-input text-center text-lg shadow-[inset_3px_3px_6px_rgba(0,0,0,0.02)] focus:border-rose-300"
+            />
+            <button 
+              type="submit" 
+              className="w-full py-4 text-white rounded-full font-sans font-semibold tracking-wide cursor-pointer clay-button-rose hover:-translate-y-1 hover:scale-[1.01] active:translate-y-0 transition-all duration-300 shadow-md flex items-center justify-center gap-3"
+            >
+              <span>Continue to Checkout</span>
+              <span className="text-lg">✨</span>
+            </button>
+          </form>
+          <CheckoutNotice />
+        </div>
       </div>
-      <div className="mt-4">
-        <CheckoutNotice />
+
+      {/* Whop Checkout Embed Container - Rendered immediately on page load so it preloads perfectly in the background */}
+      <div className={showEmbed ? "block" : "hidden"}>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={showEmbed ? { opacity: 1, y: 0 } : {}} className="flex flex-col">
+          <div className="-mx-6 -mt-6 sm:-mx-10 sm:-mt-10 overflow-hidden rounded-[2.5rem]">
+            <WhopCheckoutEmbed 
+              ref={embedRef}
+              planId="plan_kEagaVwO2m3yz" 
+              theme="light"
+              prefill={{ email: email }}
+              onComplete={handlePaymentComplete}
+            />
+          </div>
+          <div className="mt-4">
+            <CheckoutNotice />
+          </div>
+        </motion.div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -532,17 +521,26 @@ const LandingPage = () => {
                initial={{ opacity: 0, y: 20 }}
                animate={{ opacity: 1, y: 0 }}
                transition={{ duration: 0.8, delay: 0.3 }}
-               className="flex flex-col sm:flex-row gap-4"
+               className="relative inline-flex"
             >
+              {/* Elegant Overlapping Static Tag */}
+              <div className="absolute -top-3.5 right-6 z-20 pointer-events-none select-none">
+                <div className="bg-rose-500 text-white font-sans text-[10px] sm:text-xs font-semibold px-3 py-1 rounded-full shadow-lg border border-rose-400 flex items-center gap-1.5 whitespace-nowrap tracking-wider uppercase">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  <span>50% OFF — Limited Offer</span>
+                </div>
+              </div>
+
               <a
                 href="#checkout"
                 onClick={(e) => {
                   e.preventDefault();
                   document.querySelector('#checkout')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="group relative px-8 py-4 text-white rounded-full font-serif text-base sm:text-lg text-center clay-button-black hover:-translate-y-0.5 transition-all cursor-pointer"
+                className="group relative px-8 py-4 text-white rounded-full font-serif text-base sm:text-lg text-center clay-button-black hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-3"
               >
-                Get the E-Book Now — $13.99
+                <span>Get the E-Book Now — Only $6.99</span>
+                <span className="line-through text-stone-400 text-sm font-sans">$13.99</span>
               </a>
             </motion.div>
           </div>
@@ -843,7 +841,7 @@ const LandingPage = () => {
                   quote: "I love this because it makes busy mornings so much easier. 15 Minute Meals for Busy Moms has quick, healthy breakfast ideas that are simple to make and don’t take forever. Perfect for moms who want to feed their family something good without being in the kitchen all morning. 🍓✨",
                   author: "Leilani",
                   role: "Verified Buyer",
-                  avatar: "https://scontent.cdninstagram.com/v/t51.2885-19/461045710_1093883535485331_8693846117051779571_n.jpg?stp=dst-jpg_s150x150_tt6&_nc_cat=108&ccb=7-5&_nc_sid=f7ccc5&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=TJYfixPger4Q7kNvwE987N5&_nc_oc=AdrNaAHGrfvInl1RCSdEC_Ee51D_HnnuSdXES1lyTzqLYzTMlDrjgSA0KElMW2k8RS8&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=7baaf&oh=00_AQBPP8QqenWWNlmDqleQh2Z0kaP7yBYHaFSw4th0wQIL1Q&oe=6A510A49"
+                  avatar: "https://i.postimg.cc/1X32QQDk/image.png"
                 }
               ].map((item, idx) => (
                 <motion.div
@@ -887,7 +885,12 @@ const LandingPage = () => {
       <section id="checkout" className="py-16 md:py-24 px-4 sm:px-6 text-center bg-stone-50">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl sm:text-5xl md:text-6xl font-serif text-stone-850 mb-4 sm:mb-6 leading-tight">Ready to reclaim your evenings?</h2>
-          <p className="text-base sm:text-xl text-stone-500 mb-8 sm:mb-10 font-light px-2">Instant access to the digital PDF. Pay securely via Whop.</p>
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-8 sm:mb-10 px-2">
+            <span className="text-base sm:text-xl text-stone-500 font-light">Instant access to the digital PDF. Only</span>
+            <span className="text-2xl sm:text-3xl font-serif font-bold text-stone-850">$6.99</span>
+            <span className="line-through text-stone-400 text-base sm:text-lg font-light font-sans">$13.99</span>
+            <span className="bg-rose-100 text-rose-600 text-xs font-sans font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-rose-200/50 animate-pulse">Limited Time Offer</span>
+          </div>
           
           <div className="overflow-hidden text-left mx-auto max-w-2xl p-6 sm:p-10 clay-card-white border-0 shadow-[inset_6px_6px_12px_rgba(255,255,255,0.95),inset_-6px_-6px_12px_rgba(120,110,100,0.06),15px_25px_50px_rgba(0,0,0,0.12)]">
             <CheckoutFlow />

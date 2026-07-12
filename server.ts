@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import nodemailer from "nodemailer";
+import crypto from "crypto";
 
 async function startServer() {
   const app = express();
@@ -26,17 +27,64 @@ async function startServer() {
     );
   }
 
+  const TOKEN_SECRET = process.env.TOKEN_SECRET || "15mincookbook-super-secure-token-signing-key-2026-xyz";
+
   function generateShortLivedToken(email: string): string {
-    const expiry = Date.now() + 2 * 60 * 60 * 1000; // 2 hours validity
+    const expiry = Date.now() + 30 * 60 * 1000; // 30 minutes validity
     const payload = {
-      email,
+      email: email.toLowerCase().trim(),
       exp: expiry,
-      salt: Math.random().toString(36).substring(2, 10)
+      salt: crypto.randomBytes(8).toString('hex')
     };
-    return Buffer.from(JSON.stringify(payload)).toString('base64')
+    const payloadStr = JSON.stringify(payload);
+    const base64Payload = Buffer.from(payloadStr).toString('base64')
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
+
+    const hmac = crypto.createHmac('sha256', TOKEN_SECRET);
+    hmac.update(base64Payload);
+    const signature = hmac.digest('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    return `${base64Payload}.${signature}`;
+  }
+
+  function verifyToken(token: string): { isValid: boolean; email?: string } {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 2) return { isValid: false };
+
+      const [base64Payload, signature] = parts;
+
+      const hmac = crypto.createHmac('sha256', TOKEN_SECRET);
+      hmac.update(base64Payload);
+      const expectedSignature = hmac.digest('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+      if (signature !== expectedSignature) {
+        console.warn("Token signature mismatch!");
+        return { isValid: false };
+      }
+
+      let base64 = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4) {
+        base64 += '=';
+      }
+      const payload = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
+
+      if (payload && payload.exp && typeof payload.exp === 'number') {
+        const isValid = Date.now() < payload.exp;
+        return { isValid, email: payload.email };
+      }
+    } catch (e) {
+      console.error("Token verification failed:", e);
+    }
+    return { isValid: false };
   }
 
   // Helper to get styled email templates depending on recipient and purpose
@@ -268,6 +316,16 @@ async function startServer() {
   app.delete("/api/logs", (req, res) => {
     webhookLogs.length = 0;
     res.json({ success: true });
+  });
+
+  // Verify secure cryptographically signed download token
+  app.get("/api/verify-token", (req, res) => {
+    const token = req.query.token;
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ isValid: false, error: "Token parameter is required" });
+    }
+    const result = verifyToken(token);
+    return res.json(result);
   });
 
   // Vite middleware for development
