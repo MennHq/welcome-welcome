@@ -206,8 +206,14 @@ async function startServer() {
       const smtpEmail = process.env.SMTP_EMAIL;
       const smtpPassword = process.env.SMTP_PASSWORD;
 
+      const host = req.get('host') || '15mincookbook.com';
+      const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+      const token = generateShortLivedToken(email);
+      const downloadUrl = `${protocol}://${host}/download?token=${token}`;
+
       if (!smtpEmail || !smtpPassword) {
-        return res.status(500).json({ error: "SMTP configuration is missing. Please set SMTP_EMAIL and SMTP_PASSWORD in your environment variables." });
+        console.warn("SMTP configuration is missing. Returning token without sending email.");
+        return res.json({ success: true, emailSent: false, message: "SMTP credentials missing. Proceeding with download token.", token });
       }
 
       const transporter = nodemailer.createTransport({
@@ -218,15 +224,15 @@ async function startServer() {
         },
       });
 
-      const host = req.get('host') || '15mincookbook.com';
-      const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-      const token = generateShortLivedToken(email);
-      const downloadUrl = `${protocol}://${host}/download?token=${token}`;
-
       const mailOptions = getMailOptions(email, smtpEmail, downloadUrl, isGift, recipientName, personalNote);
 
-      await transporter.sendMail(mailOptions);
-      res.json({ success: true, message: "Email sent successfully", token });
+      try {
+        await transporter.sendMail(mailOptions);
+        res.json({ success: true, emailSent: true, message: "Email sent successfully", token });
+      } catch (mailError: any) {
+        console.error("Failed to send email via SMTP:", mailError);
+        res.json({ success: true, emailSent: false, message: "Email send failed: " + mailError.message, token });
+      }
 
     } catch (error: any) {
       console.error("Email sending error:", error);

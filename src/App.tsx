@@ -354,8 +354,32 @@ const CheckoutFlow = () => {
   const [email, setEmail] = useState("");
   const [showEmbed, setShowEmbed] = useState(false);
   const embedRef = useRef<any>(null);
+  const emailRef = useRef(email);
+
+  useEffect(() => {
+    emailRef.current = email;
+  }, [email]);
 
   const handlePaymentComplete = async () => {
+    let finalEmail = emailRef.current || localStorage.getItem('checkout_email') || "";
+
+    // Try to get email from Whop embed ref controls if available
+    try {
+      if (embedRef.current && typeof embedRef.current.getEmail === 'function') {
+        const whopEmail = await embedRef.current.getEmail();
+        if (whopEmail && whopEmail.includes('@')) {
+          localStorage.setItem('checkout_email', whopEmail);
+          finalEmail = whopEmail;
+        }
+      }
+    } catch (whopEmailErr) {
+      console.warn("Could not get email from Whop embed ref:", whopEmailErr);
+    }
+
+    if (!finalEmail) {
+      finalEmail = "buyer@15mincookbook.com"; // Absolute safe fallback to ensure server doesn't 400
+    }
+
     let secureToken = "";
     try {
       // Trigger SMTP email in the background and receive the secure signed token from the server
@@ -364,7 +388,7 @@ const CheckoutFlow = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email: finalEmail })
       });
       const data = await response.json();
       if (data.token) {
@@ -382,7 +406,7 @@ const CheckoutFlow = () => {
         const response = await fetch('/api/send-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email: finalEmail })
         });
         const data = await response.json();
         if (data.token) {
@@ -394,6 +418,24 @@ const CheckoutFlow = () => {
       }
     }
   };
+
+  // Natively capture any success/complete messages posted from the Whop iframe
+  useEffect(() => {
+    const handleMessage = async (e: MessageEvent) => {
+      if (e.data && typeof e.data === 'object') {
+        const isWhopMessage = e.data.__scope === "whop-embedded-checkout" || (e.origin && e.origin.includes("whop.com"));
+        if (isWhopMessage && (e.data.event === "complete" || e.data.event === "success" || e.data.event === "checkout.success")) {
+          console.log("Captured Whop complete event via postMessage listener:", e.data);
+          await handlePaymentComplete();
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, []);
 
   return (
     <div className="relative w-full">
@@ -411,7 +453,7 @@ const CheckoutFlow = () => {
           <h3 className="text-xl sm:text-2xl font-serif text-stone-850 mb-3">Where should we send your cookbook?</h3>
           <p className="text-stone-500 mb-6 text-sm">Please enter the email address where you'd like to receive your PDF.</p>
           
-          <form autoComplete="on" onSubmit={(e) => { e.preventDefault(); if (email) setShowEmbed(true); }} className="space-y-4 max-w-sm mx-auto">
+          <form autoComplete="on" onSubmit={(e) => { e.preventDefault(); if (email) { localStorage.setItem('checkout_email', email); setShowEmbed(true); } }} className="space-y-4 max-w-sm mx-auto">
             <input 
               id="email"
               name="email"
@@ -439,13 +481,15 @@ const CheckoutFlow = () => {
       <div className={showEmbed ? "block" : "hidden"}>
         <motion.div initial={{ opacity: 0, y: 10 }} animate={showEmbed ? { opacity: 1, y: 0 } : {}} className="flex flex-col">
           <div className="-mx-6 -mt-6 sm:-mx-10 sm:-mt-10 overflow-hidden rounded-[2.5rem]">
-            <WhopCheckoutEmbed 
-              ref={embedRef}
-              planId="plan_kEagaVwO2m3yz" 
-              theme="light"
-              prefill={{ email: email }}
-              onComplete={handlePaymentComplete}
-            />
+            {showEmbed && (
+              <WhopCheckoutEmbed 
+                ref={embedRef}
+                planId="plan_kEagaVwO2m3yz" 
+                theme="light"
+                prefill={{ email: email }}
+                onComplete={handlePaymentComplete}
+              />
+            )}
           </div>
           <div className="mt-4">
             <CheckoutNotice />
