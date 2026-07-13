@@ -191,6 +191,69 @@ async function startServer() {
     }
   }
 
+  // In-memory logs for debugging webhooks
+  const webhookLogs: any[] = [];
+
+  // Middleware to log all API requests - registered first to capture everything
+  app.use("/api", (req, res, next) => {
+    // Prevent the logging endpoint itself from polluting the logs
+    if (req.url === '/logs' && req.method === 'GET') {
+      return next();
+    }
+    
+    webhookLogs.unshift({
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      url: req.url,
+      headers: req.headers,
+      body: req.body,
+    });
+    if (webhookLogs.length > 50) webhookLogs.pop();
+    next();
+  });
+
+  // Helper to safely extract email from deep object structures (guarded against circular refs)
+  function findEmail(obj: any, visited = new Set<any>()): string | null {
+    if (!obj || typeof obj !== 'object') return null;
+    if (visited.has(obj)) return null;
+    visited.add(obj);
+
+    // Direct check for standard fields
+    const directFields = [
+      'email', 'user_email', 'customer_email', 'buyer_email', 'recipient_email', 'recipientEmail'
+    ];
+    for (const field of directFields) {
+      if (obj[field] && typeof obj[field] === 'string' && obj[field].includes('@')) {
+        return obj[field].trim();
+      }
+    }
+
+    // Helper checks for known nested structures
+    const nestedChecks = [
+      obj.data?.email,
+      obj.data?.user?.email,
+      obj.user?.email,
+      obj.customer?.email,
+      obj.buyer?.email
+    ];
+    for (const email of nestedChecks) {
+      if (email && typeof email === 'string' && email.includes('@')) {
+        return email.trim();
+      }
+    }
+
+    // Recursive search
+    for (const key of Object.keys(obj)) {
+      try {
+        const val = findEmail(obj[key], visited);
+        if (val) return val;
+      } catch (e) {
+        // Safe catch-all
+      }
+    }
+    return null;
+  }
+
   // API constraints
   app.all("/api/send-email", async (req, res) => {
     try {
@@ -216,13 +279,34 @@ async function startServer() {
         return res.json({ success: true, emailSent: false, message: "SMTP credentials missing. Proceeding with download token.", token });
       }
 
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: smtpEmail,
-          pass: smtpPassword,
-        },
-      });
+      // Dynamic transporter support for custom SMTP providers or standard Gmail
+      let transporter;
+      const smtpHost = process.env.SMTP_HOST;
+      const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465;
+      const smtpSecure = process.env.SMTP_SECURE !== undefined 
+        ? (process.env.SMTP_SECURE === 'true' || process.env.SMTP_SECURE === '1') 
+        : (smtpPort === 465);
+
+      if (smtpHost) {
+        transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpSecure,
+          auth: {
+            user: smtpEmail,
+            pass: smtpPassword,
+          },
+        });
+      } else {
+        // Fallback to Gmail service
+        transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: smtpEmail,
+            pass: smtpPassword,
+          },
+        });
+      }
 
       const mailOptions = getMailOptions(email, smtpEmail, downloadUrl, isGift, recipientName, personalNote);
 
@@ -238,40 +322,6 @@ async function startServer() {
       console.error("Email sending error:", error);
       res.status(500).json({ error: error.message || "Failed to send email" });
     }
-  });
-
-  function findEmail(obj: any): string | null {
-    if (!obj || typeof obj !== 'object') return null;
-    if (obj.email && typeof obj.email === 'string' && obj.email.includes('@')) return obj.email;
-    if (obj.data && obj.data.email) return obj.data.email;
-    if (obj.user && obj.user.email) return obj.user.email;
-    if (obj.customer && obj.customer.email) return obj.customer.email;
-    for (const key of Object.keys(obj)) {
-      const val = findEmail(obj[key]);
-      if (val) return val;
-    }
-    return null;
-  }
-
-  // In-memory logs for debugging webhooks
-  const webhookLogs: any[] = [];
-
-  // Middleware to log all API requests
-  app.use("/api", (req, res, next) => {
-    // Prevent the logging endpoint itself from polluting the logs
-    if (req.url === '/logs' && req.method === 'GET') {
-      return next();
-    }
-    
-    webhookLogs.unshift({
-      timestamp: new Date().toISOString(),
-      method: req.method,
-      url: req.url,
-      headers: req.headers,
-      body: req.body,
-    });
-    if (webhookLogs.length > 50) webhookLogs.pop();
-    next();
   });
 
   // Whop webhook route
