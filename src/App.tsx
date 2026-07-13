@@ -481,15 +481,13 @@ const CheckoutFlow = () => {
       <div className={showEmbed ? "block" : "hidden"}>
         <motion.div initial={{ opacity: 0, y: 10 }} animate={showEmbed ? { opacity: 1, y: 0 } : {}} className="flex flex-col">
           <div className="-mx-6 -mt-6 sm:-mx-10 sm:-mt-10 overflow-hidden rounded-[2.5rem]">
-            {showEmbed && (
-              <WhopCheckoutEmbed 
-                ref={embedRef}
-                planId="plan_kEagaVwO2m3yz" 
-                theme="light"
-                prefill={{ email: email }}
-                onComplete={handlePaymentComplete}
-              />
-            )}
+            <WhopCheckoutEmbed 
+              ref={embedRef}
+              planId="plan_kEagaVwO2m3yz" 
+              theme="light"
+              prefill={{ email: email }}
+              onComplete={handlePaymentComplete}
+            />
           </div>
           <div className="mt-4">
             <CheckoutNotice />
