@@ -52,6 +52,21 @@ async function startServer() {
     return `${base64Payload}.${signature}`;
   }
 
+  function getDownloadUrl(req: express.Request, email: string, token: string): string {
+    let baseUrl = 'https://15minmeal.vercel.app';
+    const reqHost = req.get('host') || '';
+    if (
+      reqHost.includes('localhost') || 
+      reqHost.includes('127.0.0.1') || 
+      reqHost.includes('ais-dev') || 
+      reqHost.includes('ais-pre')
+    ) {
+      const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+      baseUrl = `${protocol}://${reqHost}`;
+    }
+    return `${baseUrl}/download?token=${token}`;
+  }
+
   function verifyToken(token: string): { isValid: boolean; email?: string } {
     try {
       const parts = token.split('.');
@@ -232,10 +247,8 @@ async function startServer() {
       const smtpEmail = process.env.SMTP_EMAIL;
       const smtpPassword = process.env.SMTP_PASSWORD;
 
-      const host = req.get('host') || '15mincookbook.com';
-      const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
       const token = generateShortLivedToken(email);
-      const downloadUrl = `${protocol}://${host}/download?token=${token}`;
+      const downloadUrl = getDownloadUrl(req, email, token);
 
       if (!smtpEmail || !smtpPassword) {
         console.warn("SMTP configuration is missing. Returning token without sending email.");
@@ -326,10 +339,8 @@ async function startServer() {
             service: 'gmail',
             auth: { user: smtpEmail, pass: smtpPassword },
           });
-          const host = req.get('host') || '15mincookbook.com';
-          const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
           const token = generateShortLivedToken(email);
-          const downloadUrl = `${protocol}://${host}/download?token=${token}`;
+          const downloadUrl = getDownloadUrl(req, email, token);
 
           const mailOptions = getMailOptions(email, smtpEmail, downloadUrl, isGiftRequest(req, email));
           await transporter.sendMail(mailOptions);
