@@ -191,67 +191,30 @@ async function startServer() {
     }
   }
 
-  // In-memory logs for debugging webhooks
-  const webhookLogs: any[] = [];
+  // In-memory cache to prevent duplicate email sends within a short time window (e.g., 2 minutes)
+  const sentEmailsCache = new Map<string, number>();
 
-  // Middleware to log all API requests - registered first to capture everything
-  app.use("/api", (req, res, next) => {
-    // Prevent the logging endpoint itself from polluting the logs
-    if (req.url === '/logs' && req.method === 'GET') {
-      return next();
+  function shouldSendEmail(email: string): boolean {
+    const key = email.toLowerCase().trim();
+    const now = Date.now();
+    const lastSent = sentEmailsCache.get(key);
+    
+    if (lastSent && (now - lastSent < 2 * 60 * 1000)) {
+      // Sent within the last 2 minutes, don't send again
+      return false;
     }
     
-    webhookLogs.unshift({
-      timestamp: new Date().toISOString(),
-      method: req.method,
-      url: req.url,
-      headers: req.headers,
-      body: req.body,
-    });
-    if (webhookLogs.length > 50) webhookLogs.pop();
-    next();
-  });
-
-  // Helper to safely extract email from deep object structures (guarded against circular refs)
-  function findEmail(obj: any, visited = new Set<any>()): string | null {
-    if (!obj || typeof obj !== 'object') return null;
-    if (visited.has(obj)) return null;
-    visited.add(obj);
-
-    // Direct check for standard fields
-    const directFields = [
-      'email', 'user_email', 'customer_email', 'buyer_email', 'recipient_email', 'recipientEmail'
-    ];
-    for (const field of directFields) {
-      if (obj[field] && typeof obj[field] === 'string' && obj[field].includes('@')) {
-        return obj[field].trim();
+    // Update the timestamp
+    sentEmailsCache.set(key, now);
+    
+    // Clean up old entries from the cache to prevent memory leaks
+    for (const [cacheKey, timestamp] of sentEmailsCache.entries()) {
+      if (now - timestamp > 5 * 60 * 1000) {
+        sentEmailsCache.delete(cacheKey);
       }
     }
-
-    // Helper checks for known nested structures
-    const nestedChecks = [
-      obj.data?.email,
-      obj.data?.user?.email,
-      obj.user?.email,
-      obj.customer?.email,
-      obj.buyer?.email
-    ];
-    for (const email of nestedChecks) {
-      if (email && typeof email === 'string' && email.includes('@')) {
-        return email.trim();
-      }
-    }
-
-    // Recursive search
-    for (const key of Object.keys(obj)) {
-      try {
-        const val = findEmail(obj[key], visited);
-        if (val) return val;
-      } catch (e) {
-        // Safe catch-all
-      }
-    }
-    return null;
+    
+    return true;
   }
 
   // API constraints
@@ -279,34 +242,18 @@ async function startServer() {
         return res.json({ success: true, emailSent: false, message: "SMTP credentials missing. Proceeding with download token.", token });
       }
 
-      // Dynamic transporter support for custom SMTP providers or standard Gmail
-      let transporter;
-      const smtpHost = process.env.SMTP_HOST;
-      const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 465;
-      const smtpSecure = process.env.SMTP_SECURE !== undefined 
-        ? (process.env.SMTP_SECURE === 'true' || process.env.SMTP_SECURE === '1') 
-        : (smtpPort === 465);
-
-      if (smtpHost) {
-        transporter = nodemailer.createTransport({
-          host: smtpHost,
-          port: smtpPort,
-          secure: smtpSecure,
-          auth: {
-            user: smtpEmail,
-            pass: smtpPassword,
-          },
-        });
-      } else {
-        // Fallback to Gmail service
-        transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: smtpEmail,
-            pass: smtpPassword,
-          },
-        });
+      if (!shouldSendEmail(email)) {
+        console.log(`[Deduplication] Email to ${email} was already sent recently. Skipping SMTP send.`);
+        return res.json({ success: true, emailSent: false, message: "Email already sent recently (de-duplicated).", token });
       }
+
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: smtpEmail,
+          pass: smtpPassword,
+        },
+      });
 
       const mailOptions = getMailOptions(email, smtpEmail, downloadUrl, isGift, recipientName, personalNote);
 
@@ -324,6 +271,40 @@ async function startServer() {
     }
   });
 
+  function findEmail(obj: any): string | null {
+    if (!obj || typeof obj !== 'object') return null;
+    if (obj.email && typeof obj.email === 'string' && obj.email.includes('@')) return obj.email;
+    if (obj.data && obj.data.email) return obj.data.email;
+    if (obj.user && obj.user.email) return obj.user.email;
+    if (obj.customer && obj.customer.email) return obj.customer.email;
+    for (const key of Object.keys(obj)) {
+      const val = findEmail(obj[key]);
+      if (val) return val;
+    }
+    return null;
+  }
+
+  // In-memory logs for debugging webhooks
+  const webhookLogs: any[] = [];
+
+  // Middleware to log all API requests
+  app.use("/api", (req, res, next) => {
+    // Prevent the logging endpoint itself from polluting the logs
+    if (req.url === '/logs' && req.method === 'GET') {
+      return next();
+    }
+    
+    webhookLogs.unshift({
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      url: req.url,
+      headers: req.headers,
+      body: req.body,
+    });
+    if (webhookLogs.length > 50) webhookLogs.pop();
+    next();
+  });
+
   // Whop webhook route
   app.post("/api/webhook/whop", async (req, res) => {
     console.log("Webhook received with headers:", req.headers);
@@ -336,6 +317,11 @@ async function startServer() {
         const smtpEmail = process.env.SMTP_EMAIL;
         const smtpPassword = process.env.SMTP_PASSWORD;
         if (smtpEmail && smtpPassword) {
+          if (!shouldSendEmail(email)) {
+            console.log(`[Deduplication] Webhook email to ${email} was already sent recently. Skipping webhook SMTP send.`);
+            return res.status(200).send("Webhook received, email already sent recently (de-duplicated)");
+          }
+
           const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: { user: smtpEmail, pass: smtpPassword },

@@ -403,12 +403,19 @@ const CheckoutFlow = () => {
   const [showEmbed, setShowEmbed] = useState(false);
   const embedRef = useRef<any>(null);
   const emailRef = useRef(email);
+  const isProcessingRef = useRef(false);
 
   useEffect(() => {
     emailRef.current = email;
   }, [email]);
 
   const handlePaymentComplete = async () => {
+    if (isProcessingRef.current) {
+      console.log("handlePaymentComplete already in progress or completed, skipping duplicate trigger.");
+      return;
+    }
+    isProcessingRef.current = true;
+
     let finalEmail = emailRef.current || localStorage.getItem('checkout_email') || "";
 
     if (!finalEmail) {
