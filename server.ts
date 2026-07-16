@@ -434,6 +434,84 @@ export default app;
     return res.json(result);
   });
 
+  // Diagnostics endpoint to check environment variables & SMTP connectivity securely
+  app.get("/api/diagnostics", async (req, res) => {
+    const smtpEmail = process.env.SMTP_EMAIL || "";
+    const smtpPassword = process.env.SMTP_PASSWORD || "";
+    const geminiKey = process.env.GEMINI_API_KEY || "";
+    const whopSecret = process.env.WHOP_WEBHOOK_SECRET || "";
+    const tokenSecret = process.env.TOKEN_SECRET || "";
+    const appUrl = process.env.APP_URL || "";
+    const port = PORT;
+    const nodeEnv = process.env.NODE_ENV || "development";
+    const isVercel = !!process.env.VERCEL;
+
+    const envStatus: Record<string, any> = {
+      SMTP_EMAIL: {
+        configured: !!smtpEmail,
+        value: smtpEmail ? (smtpEmail.includes('@') ? `${smtpEmail.slice(0, 3)}***${smtpEmail.slice(smtpEmail.indexOf('@'))}` : 'invalid-format') : "not set",
+        length: smtpEmail.length
+      },
+      SMTP_PASSWORD: {
+        configured: !!smtpPassword,
+        length: smtpPassword.length,
+        value: smtpPassword ? "***" : "not set"
+      },
+      GEMINI_API_KEY: {
+        configured: !!geminiKey,
+        length: geminiKey.length,
+        value: geminiKey ? "configured" : "not set"
+      },
+      WHOP_WEBHOOK_SECRET: {
+        configured: !!whopSecret,
+        length: whopSecret.length,
+        value: whopSecret ? "configured" : "not set"
+      },
+      TOKEN_SECRET: {
+        configured: !!tokenSecret,
+        length: tokenSecret.length,
+        value: tokenSecret ? "configured" : "not set"
+      },
+      APP_URL: {
+        configured: !!appUrl,
+        value: appUrl || "not set"
+      },
+      PORT: port,
+      NODE_ENV: nodeEnv,
+      VERCEL: isVercel
+    };
+
+    let smtpConnection = {
+      success: false,
+      message: "SMTP email or password is not configured."
+    };
+
+    if (smtpEmail && smtpPassword) {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: smtpEmail, pass: smtpPassword },
+        });
+        await transporter.verify();
+        smtpConnection = {
+          success: true,
+          message: "SMTP connection verified successfully! Email can be sent."
+        };
+      } catch (err: any) {
+        smtpConnection = {
+          success: false,
+          message: `SMTP connection failed: ${err.message || err}`
+        };
+      }
+    }
+
+    return res.json({
+      timestamp: new Date().toISOString(),
+      envStatus,
+      smtpConnection
+    });
+  });
+
   // Vite middleware for development & standalone listener
   async function startServer() {
     if (process.env.NODE_ENV !== "production") {

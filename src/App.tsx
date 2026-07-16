@@ -1288,6 +1288,8 @@ const TestWorkflow = () => {
         <div className="mt-8 text-center text-xs text-stone-400 font-light flex items-center justify-center gap-4">
           <a href="/" className="hover:text-stone-700 hover:underline transition-colors">← Back to Landing Page</a>
           <span>•</span>
+          <a href="/diagnostics" className="hover:text-stone-700 hover:underline transition-colors font-medium text-rose-500">🛠️ Check ENV Connection</a>
+          <span>•</span>
           <a href="/logs" className="hover:text-stone-700 hover:underline transition-colors">View Logs Page</a>
         </div>
       </div>
@@ -1329,9 +1331,183 @@ const LogsViewer = () => {
     <div className="p-8 font-mono text-xs bg-stone-900 text-green-400 min-h-screen whitespace-pre-wrap overflow-auto select-text">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl text-white">Webhook Logs</h1>
-        <button onClick={clearLogs} className="bg-red-600 text-white px-4 py-2 rounded font-sans cursor-pointer hover:bg-red-500 transition-colors">Clear Logs</button>
+        <div className="flex items-center gap-4">
+          <a href="/diagnostics" className="text-rose-400 hover:underline text-xs font-sans">🛠️ Connection Diagnostics</a>
+          <button onClick={clearLogs} className="bg-red-600 text-white px-4 py-2 rounded font-sans cursor-pointer hover:bg-red-500 transition-colors">Clear Logs</button>
+        </div>
       </div>
       {logs.length === 0 ? "No logs yet. Trigger a webhook!" : JSON.stringify(logs, null, 2)}
+    </div>
+  );
+};
+
+const DiagnosticsViewer = () => {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const runCheck = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(getApiUrl('/api/diagnostics'));
+      if (!res.ok) {
+        throw new Error(`HTTP Error ${res.status}: Failed to reach diagnostics API`);
+      }
+      const json = await res.json();
+      setData(json);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch diagnostics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    runCheck();
+  }, []);
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#FAF9F6] p-4 sm:p-8 flex flex-col items-center select-text">
+      <AmbientBackground />
+      <div className="relative z-10 max-w-3xl w-full">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <span className="text-xs font-bold text-rose-500 uppercase tracking-widest block mb-1">🛠️ App Diagnostics</span>
+            <h1 className="text-3xl sm:text-4xl font-serif text-stone-850 tracking-tight">Environment & SMTP Connector</h1>
+          </div>
+          <button
+            onClick={runCheck}
+            disabled={loading}
+            className="px-6 py-2.5 bg-stone-900 hover:bg-stone-800 disabled:bg-stone-400 text-white rounded-2xl text-xs tracking-wider uppercase font-semibold transition-all shadow-md cursor-pointer disabled:opacity-50"
+          >
+            {loading ? 'Running Diagnostics...' : '🔄 Run Connection Check'}
+          </button>
+        </div>
+
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 text-rose-950 p-6 rounded-[2rem] mb-6 text-sm">
+            <span className="font-bold">Error reaching backend API:</span> {error}
+            <p className="text-xs text-rose-800 mt-1">
+              Please verify your server is running. If you are accessing this from a deployed Vercel site, ensure Vercel can reach your server endpoint, or run this within AI Studio.
+            </p>
+          </div>
+        )}
+
+        {/* SMTP Connection Result */}
+        {data && (
+          <div className={`p-6 rounded-[2rem] border mb-8 shadow-sm ${
+            data.smtpConnection.success 
+              ? 'bg-emerald-50/80 border-emerald-200/60 text-emerald-950' 
+              : 'bg-rose-50/80 border-rose-200/60 text-rose-950'
+          }`}>
+            <div className="flex gap-4 items-start">
+              <span className="text-3xl shrink-0">
+                {data.smtpConnection.success ? '✅' : '❌'}
+              </span>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-bold font-serif">
+                  SMTP Connection Status: {data.smtpConnection.success ? 'CONNECTED' : 'DISCONNECTED / ERROR'}
+                </h3>
+                <p className="text-sm mt-1 leading-relaxed opacity-90 font-mono select-text bg-white/50 p-3 rounded-xl mt-2 border border-black/5 break-all">
+                  {data.smtpConnection.message}
+                </p>
+                {data.smtpConnection.success ? (
+                  <p className="text-xs mt-2 text-emerald-800 font-medium">
+                    ✓ Your SMTP_EMAIL and SMTP_PASSWORD environment variables are perfectly connected and authenticated with Gmail. Webhook & manual test email triggers will work.
+                  </p>
+                ) : (
+                  <div className="text-xs mt-3 text-rose-800 space-y-1 font-light">
+                    <p className="font-semibold">Troubleshooting Steps:</p>
+                    <ol className="list-decimal list-inside space-y-1">
+                      <li>Make sure <span className="font-semibold text-rose-900">SMTP_EMAIL</span> is your correct Gmail account (e.g. your personal or business Gmail address).</li>
+                      <li>Make sure <span className="font-semibold text-rose-900">SMTP_PASSWORD</span> is a <strong>16-character App Password</strong> from Google Accounts, NOT your actual personal Gmail login password.</li>
+                      <li>Verify you have enabled 2-Step Verification in Google Account security settings to generate an App Password.</li>
+                      <li>App Passwords do not contain spaces when you input them into your environment variables.</li>
+                    </ol>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Environmental Variables Configuration */}
+        <div className="bg-white/80 backdrop-blur-md rounded-[2.5rem] p-6 sm:p-8 border border-stone-200/50 shadow-sm mb-8">
+          <h2 className="text-xl font-serif text-stone-800 mb-4 flex items-center gap-2">
+            📋 Environment Configuration Audit
+          </h2>
+          <p className="text-xs text-stone-550 leading-relaxed font-light mb-6">
+            The status below reveals whether each environment variable is detected by your running server backend. For security, actual secret values are masked or omitted.
+          </p>
+
+          {data ? (
+            <div className="divide-y divide-stone-100 select-text">
+              {Object.entries(data.envStatus).map(([key, value]: [string, any]) => {
+                if (typeof value !== 'object' || value === null) return null;
+                const isConfigured = value.configured;
+                return (
+                  <div key={key} className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div>
+                      <div className="font-mono text-sm font-semibold text-stone-800">{key}</div>
+                      <div className="text-xs text-stone-400 mt-0.5 font-light">
+                        {key === 'SMTP_EMAIL' && 'Primary email sender account for sending PDFs.'}
+                        {key === 'SMTP_PASSWORD' && 'Gmail 16-character App Password.'}
+                        {key === 'GEMINI_API_KEY' && 'Google Gemini API key for smart processes.'}
+                        {key === 'TOKEN_SECRET' && 'Key used to sign secure download token signatures.'}
+                        {key === 'WHOP_WEBHOOK_SECRET' && 'Verification secret for incoming purchase webhooks.'}
+                        {key === 'APP_URL' && 'Callback URL host configuration.'}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        isConfigured 
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
+                        {isConfigured ? '✓ Connected' : '✗ Missing'}
+                      </span>
+                      {isConfigured && value.value && (
+                        <span className="font-mono text-xs text-stone-500 bg-stone-50 px-2 py-1 rounded-lg border border-stone-100">
+                          {value.value}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Server Metadata */}
+              <div className="py-4 flex justify-between items-center text-xs text-stone-450 font-light">
+                <span>Active Server Port</span>
+                <span className="font-mono font-semibold text-stone-600 bg-stone-100 px-2 py-0.5 rounded">{data.envStatus.PORT}</span>
+              </div>
+              <div className="py-4 flex justify-between items-center text-xs text-stone-450 font-light">
+                <span>Runtime Environment</span>
+                <span className="font-mono font-semibold text-stone-600 bg-stone-100 px-2 py-0.5 rounded uppercase">{data.envStatus.NODE_ENV}</span>
+              </div>
+              <div className="py-4 flex justify-between items-center text-xs text-stone-450 font-light">
+                <span>Hosted on Vercel Context</span>
+                <span className="font-mono font-semibold text-stone-600 bg-stone-100 px-2 py-0.5 rounded uppercase">{data.envStatus.VERCEL ? "TRUE" : "FALSE"}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center text-stone-400 font-light text-sm">
+              {loading ? 'Fetching server state...' : 'No diagnostic data retrieved.'}
+            </div>
+          )}
+        </div>
+
+        {/* Footer/Back link */}
+        <div className="text-center text-xs text-stone-400 font-light flex items-center justify-center gap-4">
+          <a href="/" className="hover:text-stone-750 hover:underline transition-all">← Back to Landing Page</a>
+          <span>•</span>
+          <a href="/test" className="hover:text-stone-750 hover:underline transition-all">Go to Email Test Page</a>
+          <span>•</span>
+          <a href="/logs" className="hover:text-stone-750 hover:underline transition-all">Go to Webhook Logs</a>
+        </div>
+      </div>
     </div>
   );
 };
@@ -1342,6 +1518,7 @@ export default function App() {
   const search = window.location.search.toLowerCase();
 
   const isLogs = path.includes('/logs');
+  const isDiagnostics = path.includes('/diagnostics') || hash.includes('diagnostics') || search.includes('diagnostics');
   const isTest = path.includes('/test') || hash.includes('test') || search.includes('test');
   const isDownload = path.includes('/download') || hash.includes('download') || search.includes('download');
 
@@ -1349,6 +1526,8 @@ export default function App() {
     <>
       {isLogs ? (
         <LogsViewer />
+      ) : isDiagnostics ? (
+        <DiagnosticsViewer />
       ) : isTest ? (
         <TestWorkflow />
       ) : isDownload ? (
