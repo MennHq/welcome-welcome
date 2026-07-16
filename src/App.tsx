@@ -553,6 +553,83 @@ const CheckoutFlow = () => {
   );
 };
 
+const FAQSection = () => {
+  const faqs = [
+    {
+      q: "Is this a physical or digital cookbook?",
+      a: "This is a digital cookbook in high-quality, full-color PDF format. You will receive an instant download link on-screen and via email immediately after purchase, with zero waiting time and no shipping costs."
+    },
+    {
+      q: "Can I print these recipes?",
+      a: "Yes, absolutely! The PDF file is fully unlocked and optimized for high-resolution printing. You can print out individual recipes or compile them into a physical binder for your kitchen counter."
+    },
+    {
+      q: "Are the ingredients expensive or hard to find?",
+      a: "No, every single ingredient used in these recipes is a standard, budget-friendly item that you can easily find at your local grocery store (such as Walmart, Kroger, Tesco, Woolworths, or Aldi). No specialty shops required!"
+    },
+    {
+      q: "Will my picky eaters enjoy these meals?",
+      a: "Yes! All recipes have been rigorously kid-tested and approved by picky eaters. We specialize in familiar comfort foods with balanced seasonings and simple ingredients that kids naturally love."
+    },
+    {
+      q: "Is it beginner-friendly?",
+      a: "100%. Each recipe features straightforward instructions, minimal active kitchen prep steps, and easy-to-follow guidelines that any home cook can complete in under 15 minutes."
+    }
+  ];
+
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+  return (
+    <section className="py-20 bg-[#FAF9F6] border-t border-stone-200/40">
+      <div className="max-w-4xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <span className="text-xs font-bold tracking-widest text-rose-500 uppercase">Have Questions?</span>
+          <h2 className="text-3xl md:text-5xl font-serif text-stone-850 mt-3 mb-4">Frequently Asked Questions</h2>
+          <p className="text-stone-550 font-light text-sm max-w-lg mx-auto">
+            Everything you need to know about the 15-Minute Cookbook. Still have a question? Contact support anytime.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {faqs.map((faq, idx) => {
+            const isOpen = activeIndex === idx;
+            return (
+              <div 
+                key={idx}
+                className="rounded-3xl border border-stone-200/50 bg-white overflow-hidden transition-all duration-300 shadow-[0_4px_12px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.03)]"
+              >
+                <button
+                  onClick={() => setActiveIndex(isOpen ? null : idx)}
+                  className="w-full py-6 px-8 flex justify-between items-center text-left focus:outline-none"
+                >
+                  <span className="font-serif text-lg text-stone-800 font-medium pr-4">{faq.q}</span>
+                  <span className={`text-rose-500 text-xl transition-transform duration-300 transform ${isOpen ? "rotate-45" : ""}`}>
+                    +
+                  </span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <div className="pb-6 px-8 text-sm text-stone-600 leading-relaxed font-light border-t border-stone-100 pt-4">
+                        {faq.a}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const LandingPage = () => {
   const [showPrivacy, setShowPrivacy] = useState(false);
 
@@ -611,7 +688,7 @@ const LandingPage = () => {
                transition={{ duration: 0.8, delay: 0.2 }}
                className="text-base sm:text-xl text-stone-600 font-light max-w-md mb-8 leading-relaxed"
             >
-              Transform chaotic evenings into peaceful family time with 50+ delicious, kid-approved recipes ready in exactly 15 minutes.
+              Transform chaotic evenings into peaceful family time. End picky eater battlegrounds, expensive takeout bills, and meal-planning stress with 50+ family-approved recipes ready in exactly 15 minutes.
             </motion.p>
 
             <motion.div
@@ -636,7 +713,7 @@ const LandingPage = () => {
                 }}
                 className="group relative px-8 py-4 text-white rounded-full font-serif text-base sm:text-lg text-center clay-button-black hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-3"
               >
-                <span>Get the E-Book Now — Only $6.99</span>
+                <span>Make Dinner Easier Tonight — Only $6.99</span>
                 <span className="line-through text-stone-400 text-sm font-sans">$13.99</span>
               </a>
             </motion.div>
@@ -781,7 +858,7 @@ const LandingPage = () => {
                 }}
                 className="inline-block px-8 py-4 text-white rounded-full font-serif text-lg clay-button-black cursor-pointer"
                >
-                 I Need This Right Now
+                 Get Instant Access for $6.99
                </a>
              </motion.div>
           </div>
@@ -978,15 +1055,43 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* FAQ Accordion Section */}
+      <FAQSection />
+
       {/* Checkout Section */}
       <section id="checkout" className="py-16 md:py-24 px-4 sm:px-6 text-center bg-stone-50">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-5xl md:text-6xl font-serif text-stone-850 mb-4 sm:mb-6 leading-tight">Ready to reclaim your evenings?</h2>
+          <h2 className="text-3xl sm:text-5xl md:text-6xl font-serif text-stone-850 mb-4 sm:mb-6 leading-tight">End Dinner Stress Today</h2>
+          
+          <p className="text-stone-550 max-w-xl mx-auto text-base sm:text-lg font-light mb-6">
+            Get instant PDF delivery of over 50+ family-tested recipes ready in exactly 15 minutes. Less than the cost of a single takeout order, but saves you hours of stress and mental load every single week.
+          </p>
+
           <div className="flex flex-wrap items-center justify-center gap-3 mb-8 sm:mb-10 px-2">
-            <span className="text-base sm:text-xl text-stone-500 font-light">Instant access to the digital PDF. Only</span>
+            <span className="text-base sm:text-lg text-stone-500 font-light">Introductory Price: Only</span>
             <span className="text-2xl sm:text-3xl font-serif font-bold text-stone-850">$6.99</span>
             <span className="line-through text-stone-400 text-base sm:text-lg font-light font-sans">$13.99</span>
-            <span className="bg-rose-100 text-rose-600 text-xs font-sans font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-rose-200/50 animate-pulse">Limited Time Offer</span>
+            <span className="bg-rose-100 text-rose-600 text-xs font-sans font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-rose-200/50">Price Rises to $13.99 After Launch</span>
+          </div>
+
+          {/* Trust Indicators Badge Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-2xl mx-auto mb-10 px-4">
+            {[
+              { text: "Instant PDF Delivery", icon: "⚡" },
+              { text: "Secure Checkout", icon: "🔒" },
+              { text: "Printable Recipes", icon: "🖨️" },
+              { text: "Family-Tested Recipes", icon: "❤️" },
+              { text: "Grocery Store Ingredients", icon: "🛒" },
+              { text: "Beginner Friendly", icon: "🍳" }
+            ].map((badge, index) => (
+              <div 
+                key={index} 
+                className="flex items-center gap-2 justify-center py-2.5 px-4 bg-white/80 rounded-2xl border border-stone-200/40 text-stone-700 text-xs font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
+              >
+                <span>{badge.icon}</span>
+                <span>{badge.text}</span>
+              </div>
+            ))}
           </div>
           
           <div className="overflow-hidden text-left mx-auto max-w-2xl p-6 sm:p-10 clay-card-white border-0 shadow-[inset_6px_6px_12px_rgba(255,255,255,0.95),inset_-6px_-6px_12px_rgba(120,110,100,0.06),15px_25px_50px_rgba(0,0,0,0.12)]">
@@ -1052,6 +1157,142 @@ const LandingPage = () => {
   );
 };
 
+const TestWorkflow = () => {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('');
+  const [lastToken, setLastToken] = useState('');
+  const [lastDownloadUrl, setLastDownloadUrl] = useState('');
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setStatus('sending');
+    setMessage('');
+    try {
+      const res = await fetch('/api/send-test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setStatus('success');
+        setMessage(data.message || 'Test email sent successfully!');
+        if (data.token) setLastToken(data.token);
+        if (data.downloadUrl) setLastDownloadUrl(data.downloadUrl);
+      } else {
+        setStatus('error');
+        setMessage(data.error || 'Failed to send test email.');
+      }
+    } catch (err: any) {
+      setStatus('error');
+      setMessage(err.message || 'An unexpected error occurred.');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#FAF9F6] py-16 px-6 relative overflow-hidden flex flex-col justify-between">
+      <AmbientBackground />
+      
+      <div className="max-w-xl w-full mx-auto relative z-10 my-auto">
+        <div className="text-center mb-10">
+          <span className="text-xs font-bold tracking-widest text-rose-500 uppercase px-3 py-1 bg-rose-50 border border-rose-200/50 rounded-full">Developer Sandbox</span>
+          <h1 className="text-3xl sm:text-5xl font-serif text-stone-850 mt-4 mb-3">Email Workflow Test</h1>
+          <p className="text-stone-550 font-light text-sm max-w-sm mx-auto leading-relaxed">
+            Test the full SMTP delivery flow instantly with 1-click. No payment required.
+          </p>
+        </div>
+
+        <div className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-stone-200/50 shadow-[0_15px_50px_rgba(0,0,0,0.03)]">
+          <form onSubmit={handleSend} className="space-y-6">
+            <div>
+              <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Recipient Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5" />
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. name@domain.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl bg-stone-50 border border-stone-200 focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-400 transition-all font-sans text-stone-800 placeholder-stone-400 text-sm"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={status === 'sending'}
+              className="w-full py-4 text-white rounded-2xl font-serif text-base text-center bg-stone-900 hover:bg-stone-850 disabled:bg-stone-400 transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
+            >
+              {status === 'sending' ? (
+                <span>Sending Test Email...</span>
+              ) : (
+                <>
+                  <Mail className="w-5 h-5" />
+                  <span>Send Test Email — Free</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {status !== 'idle' && (
+            <div className={`mt-6 p-4 rounded-2xl text-sm border font-light leading-relaxed animate-fade-in ${
+              status === 'success' 
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200/60' 
+                : status === 'error'
+                ? 'bg-rose-50 text-rose-800 border-rose-200/60'
+                : 'bg-stone-50 text-stone-600 border-stone-200/60'
+            }`}>
+              <div className="font-semibold mb-1">
+                {status === 'success' ? '✓ Email Sent Successfully!' : status === 'error' ? '⚠ Error Occurred' : 'Sending...'}
+              </div>
+              <p className="opacity-90">{message}</p>
+              
+              {status === 'success' && (
+                <div className="mt-4 pt-4 border-t border-emerald-200/40 space-y-2">
+                  <p className="text-xs text-emerald-700 font-medium">Test & Verification Shortcuts:</p>
+                  <div className="flex flex-col gap-2">
+                    {lastDownloadUrl && (
+                      <a 
+                        href={lastDownloadUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-rose-600 hover:text-rose-700 hover:underline font-medium"
+                      >
+                        🔗 Open Delivery Download Link (PDF)
+                      </a>
+                    )}
+                    <a 
+                      href="/logs" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-stone-600 hover:text-stone-700 hover:underline font-medium"
+                    >
+                      📋 Open Webhook Logs in New Tab
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-8 text-center text-xs text-stone-400 font-light flex items-center justify-center gap-4">
+          <a href="/" className="hover:text-stone-700 hover:underline transition-colors">← Back to Landing Page</a>
+          <span>•</span>
+          <a href="/logs" className="hover:text-stone-700 hover:underline transition-colors">View Logs Page</a>
+        </div>
+      </div>
+
+      <footer className="py-6 text-center text-xs text-stone-400 font-light">
+        © {new Date().getFullYear()} 15-Minute Cookbook. Internal Developer Sandbox.
+      </footer>
+    </div>
+  );
+};
+
 const LogsViewer = () => {
   const [logs, setLogs] = useState<any[]>([]);
   useEffect(() => {
@@ -1095,12 +1336,15 @@ export default function App() {
   const search = window.location.search.toLowerCase();
 
   const isLogs = path.includes('/logs');
+  const isTest = path.includes('/test') || hash.includes('test') || search.includes('test');
   const isDownload = path.includes('/download') || hash.includes('download') || search.includes('download');
 
   return (
     <>
       {isLogs ? (
         <LogsViewer />
+      ) : isTest ? (
+        <TestWorkflow />
       ) : isDownload ? (
         <EmbedGuard>
           <Download />

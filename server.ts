@@ -284,6 +284,47 @@ async function startServer() {
     }
   });
 
+  // Test Email Endpoint (1-click send from /test route, no payment, no deduplication)
+  app.post("/api/send-test-email", async (req, res) => {
+    try {
+      const email = req.body.email;
+      if (!email || typeof email !== "string" || !email.includes("@")) {
+        return res.status(400).json({ error: "A valid email address is required" });
+      }
+
+      const smtpEmail = process.env.SMTP_EMAIL;
+      const smtpPassword = process.env.SMTP_PASSWORD;
+
+      if (!smtpEmail || !smtpPassword) {
+        return res.status(400).json({ 
+          error: "SMTP configuration is missing on the server. Please add SMTP_EMAIL and SMTP_PASSWORD to your environment." 
+        });
+      }
+
+      const token = generateShortLivedToken(email);
+      const downloadUrl = getDownloadUrl(req, email, token);
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: smtpEmail,
+          pass: smtpPassword,
+        },
+      });
+
+      const mailOptions = getMailOptions(email, smtpEmail, downloadUrl, false);
+      
+      // Let's prepend "[TEST SEND]" to the subject to make it easy to identify
+      mailOptions.subject = `[TEST SEND] ${mailOptions.subject}`;
+
+      await transporter.sendMail(mailOptions);
+      res.json({ success: true, message: "Test email sent successfully", token, downloadUrl });
+    } catch (error: any) {
+      console.error("Test email sending error:", error);
+      res.status(500).json({ error: error.message || "Failed to send test email" });
+    }
+  });
+
   function findEmail(obj: any): string | null {
     if (!obj || typeof obj !== 'object') return null;
     if (obj.email && typeof obj.email === 'string' && obj.email.includes('@')) return obj.email;
