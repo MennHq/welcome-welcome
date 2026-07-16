@@ -4,6 +4,22 @@ import { WhopCheckoutEmbed } from "@whop/checkout/react";
 import Lenis from '@studio-freight/lenis';
 import { Info, Mail } from 'lucide-react';
 
+const getApiUrl = (endpoint: string): string => {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const hostname = window.location.hostname;
+  
+  // If the app is running on Vercel, route the API request to our deployed Cloud Run backend
+  if (
+    hostname.includes('vercel.app') || 
+    hostname.includes('15minmeal.vercel.app')
+  ) {
+    return `https://ais-pre-pgaw5ek55e6tam6rg3is5i-376304965448.asia-east1.run.app${cleanEndpoint}`;
+  }
+  
+  // Default to relative paths for local development and direct container preview
+  return cleanEndpoint;
+};
+
 const AmbientBackground = () => (
   <>
     <img
@@ -92,7 +108,7 @@ const Download = () => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     if (token) {
-      fetch(`/api/verify-token?token=${encodeURIComponent(token)}`)
+      fetch(getApiUrl(`/api/verify-token?token=${encodeURIComponent(token)}`))
         .then(res => {
           const contentType = res.headers.get("content-type") || "";
           if (!res.ok || !contentType.includes("application/json")) {
@@ -425,7 +441,7 @@ const CheckoutFlow = () => {
     let secureToken = "";
     try {
       // Trigger SMTP email in the background and receive the secure signed token from the server
-      const response = await fetch('/api/send-email', {
+      const response = await fetch(getApiUrl('/api/send-email'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1170,7 +1186,7 @@ const TestWorkflow = () => {
     setStatus('sending');
     setMessage('');
     try {
-      const res = await fetch('/api/send-test-email', {
+      const res = await fetch(getApiUrl('/api/send-test-email'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -1298,7 +1314,7 @@ const LogsViewer = () => {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const res = await fetch('/api/logs');
+        const res = await fetch(getApiUrl('/api/logs'));
         const data = await res.json();
         setLogs(data);
       } catch (err) {
@@ -1312,7 +1328,7 @@ const LogsViewer = () => {
 
   const clearLogs = async () => {
     try {
-      await fetch('/api/logs', { method: 'DELETE' });
+      await fetch(getApiUrl('/api/logs'), { method: 'DELETE' });
       setLogs([]);
     } catch (err) {
       console.error(err);
