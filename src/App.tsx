@@ -6,6 +6,18 @@ import { Info, Mail } from 'lucide-react';
 
 const getApiUrl = (endpoint: string): string => {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
+  // Check if there is a developer backend URL override stored in localStorage
+  try {
+    const override = localStorage.getItem('BACKEND_URL_OVERRIDE');
+    if (override && (override.startsWith('http://') || override.startsWith('https://'))) {
+      const cleanOverride = override.endsWith('/') ? override.slice(0, -1) : override;
+      return `${cleanOverride}${cleanEndpoint}`;
+    }
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+
   const hostname = window.location.hostname;
   
   // If the app is running on Vercel, route the API request to our deployed Cloud Run backend
@@ -1180,17 +1192,47 @@ const TestWorkflow = () => {
   const [lastToken, setLastToken] = useState('');
   const [lastDownloadUrl, setLastDownloadUrl] = useState('');
 
+  // Load initial backend URL override from localStorage
+  const [backendOverride, setBackendOverride] = useState(() => {
+    try {
+      return localStorage.getItem('BACKEND_URL_OVERRIDE') || '';
+    } catch (e) {
+      return '';
+    }
+  });
+  const [saveFeedback, setSaveFeedback] = useState('');
+
+  const saveBackendOverride = (url: string) => {
+    const cleanUrl = url.trim();
+    try {
+      if (!cleanUrl) {
+        localStorage.removeItem('BACKEND_URL_OVERRIDE');
+        setBackendOverride('');
+        setSaveFeedback('Using default backend URL (relative / direct preview).');
+      } else {
+        localStorage.setItem('BACKEND_URL_OVERRIDE', cleanUrl);
+        setBackendOverride(cleanUrl);
+        setSaveFeedback('Saved backend URL override! Try sending now.');
+      }
+    } catch (e: any) {
+      setSaveFeedback(`Error saving: ${e.message}`);
+    }
+    setTimeout(() => setSaveFeedback(''), 4000);
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setStatus('sending');
     setMessage('');
     try {
-      const res = await fetch(getApiUrl('/api/send-test-email'), {
+      const targetUrl = getApiUrl('/api/send-test-email');
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
+      
       const data = await res.json();
       if (res.ok && data.success) {
         setStatus('success');
@@ -1203,7 +1245,7 @@ const TestWorkflow = () => {
       }
     } catch (err: any) {
       setStatus('error');
-      setMessage(err.message || 'An unexpected error occurred.');
+      setMessage(err.message || 'An unexpected error occurred. This is usually a CORS/network block from Vercel.');
     }
   };
 
@@ -1264,7 +1306,7 @@ const TestWorkflow = () => {
               <div className="font-semibold mb-1">
                 {status === 'success' ? '✓ Email Sent Successfully!' : status === 'error' ? '⚠ Error Occurred' : 'Sending...'}
               </div>
-              <p className="opacity-90">{message}</p>
+              <p className="opacity-90 text-xs sm:text-sm">{message}</p>
               
               {status === 'success' && (
                 <div className="mt-4 pt-4 border-t border-emerald-200/40 space-y-2">
@@ -1293,6 +1335,49 @@ const TestWorkflow = () => {
               )}
             </div>
           )}
+        </div>
+
+        {/* Custom Backend URL Configurator */}
+        <div className="mt-6 bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-stone-200/50 shadow-[0_15px_50px_rgba(0,0,0,0.01)] text-left">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-stone-800 font-serif font-bold text-sm">🌐 Vercel CORS & Cloud Run Target Configurator</span>
+          </div>
+          <p className="text-[11px] text-stone-600 leading-relaxed font-light mb-3">
+            Google AI Studio preview URLs are highly secure and behind a login/identity proxy. Browsers block cross-origin (CORS) calls from external sites like your <strong>Vercel deployment</strong> to this preview endpoint.
+          </p>
+          <div className="bg-stone-50 p-3 rounded-2xl border border-stone-200/30 mb-3 text-[11px] text-stone-500 font-light leading-relaxed">
+            <span className="font-semibold text-stone-700">How to run this successfully on Vercel:</span>
+            <ol className="list-decimal list-inside space-y-1 mt-1">
+              <li>Deploy this applet to <strong>Cloud Run</strong> using the <strong>Deploy</strong> tab in AI Studio.</li>
+              <li>Copy the clean public Cloud Run URL provided by AI Studio (which has no proxy wrapper).</li>
+              <li>Paste that URL below and save! Your Vercel page will then connect directly to the active database/SMTP backend.</li>
+            </ol>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="e.g. https://your-cloudrun-url.a.run.app"
+                value={backendOverride}
+                onChange={(e) => setBackendOverride(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-xl bg-stone-50 border border-stone-200 focus:outline-none focus:ring-1 focus:ring-rose-200 transition-all font-mono text-[11px] text-stone-700"
+              />
+              <button
+                type="button"
+                onClick={() => saveBackendOverride(backendOverride)}
+                className="px-3 py-2 bg-stone-900 hover:bg-stone-850 text-white rounded-xl text-xs font-serif font-medium transition-colors cursor-pointer shrink-0"
+              >
+                Save Target
+              </button>
+            </div>
+            {saveFeedback && (
+              <p className="text-[10px] font-semibold text-rose-500 animate-fade-in">{saveFeedback}</p>
+            )}
+            <p className="text-[10px] text-stone-400 font-light mt-1">
+              Current API Endpoint: <span className="font-mono text-stone-500 select-all font-semibold break-all">{getApiUrl('/api/send-test-email')}</span>
+            </p>
+          </div>
         </div>
 
         <div className="mt-8 text-center text-xs text-stone-400 font-light flex items-center justify-center gap-4">
